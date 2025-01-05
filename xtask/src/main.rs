@@ -59,11 +59,17 @@ impl CommandBuild {
 struct CommandTest {
     #[arg(long, help = "Run tests serially and do not capture output.")]
     no_capture: bool,
+    #[arg(long, help = "Activate all available features.")]
+    all_features: bool,
 }
 
 impl CommandTest {
     fn run(self) {
-        run_command(make_test_cmd(self.no_capture, true, &[]));
+        if self.all_features {
+            run_command(make_test_cmd(self.no_capture, true, true, &[]));
+        } else {
+            run_command(make_test_cmd(self.no_capture, true, false, &[]));
+        }
     }
 }
 
@@ -128,14 +134,23 @@ fn make_build_cmd(locked: bool) -> StdCommand {
     cmd
 }
 
-fn make_test_cmd(no_capture: bool, default_features: bool, features: &[&str]) -> StdCommand {
+fn make_test_cmd(
+    no_capture: bool,
+    default_features: bool,
+    all_features: bool,
+    features: &[&str],
+) -> StdCommand {
     let mut cmd = find_command("cargo");
     cmd.args(["test", "--workspace"]);
-    if !default_features {
-        cmd.arg("--no-default-features");
-    }
-    if !features.is_empty() {
-        cmd.args(["--features", features.join(",").as_str()]);
+    if all_features {
+        cmd.arg("--all-features");
+    } else {
+        if !default_features {
+            cmd.arg("--no-default-features");
+        }
+        if !features.is_empty() {
+            cmd.args(["--features", features.join(",").as_str()]);
+        }
     }
     if no_capture {
         cmd.args(["--", "--nocapture"]);

@@ -1,0 +1,6 @@
+---
+source: spath/src/tests/mod.rs
+expression: value
+snapshot_kind: text
+---
+{"a":[3,5,1,2,4,6,{"b":'j'},{"b":'k'},{"b":{}},{"b":'kilo'}],"e":'f',"o":{"p":1,"q":2,"r":3,"s":5,"t":{"u":6}}}
