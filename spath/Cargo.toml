@@ -16,6 +16,12 @@
 name = "spath"
 version = "0.0.1"
 
+description = """
+SPath is query expressions for semi-structured data. You can use it
+as a drop-in replacement for JSONPath, but also for other
+semi-structured data formats like TOML or user-defined variants.
+"""
+
 edition.workspace = true
 homepage.workspace = true
 license.workspace = true
