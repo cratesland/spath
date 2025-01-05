@@ -1,6 +1,6 @@
-# Fast template for developing a new Rust project
+# SPath: Query expressions for semi-structured data
 
-Use this repository as a GitHub template to quickly start a new Rust project.
+You can use it as a drop-in replacement for JSONPath, but also for other semi-structured data formats like TOML or user-defined variants.
 
 ## License
 
