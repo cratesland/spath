@@ -12,14 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod value;
-pub use value::*;
-
-mod error;
-pub use error::*;
-
-#[cfg(feature = "json")]
-mod json;
-
-#[cfg(test)]
-mod tests;
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct EvalError(pub String);

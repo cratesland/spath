@@ -14,7 +14,7 @@
 
 [package]
 name = "spath"
-version = "0.1.0"
+version = "0.0.1"
 
 edition.workspace = true
 homepage.workspace = true
@@ -23,7 +23,21 @@ readme.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+json = ["dep:serde_json"]
+
 [dependencies]
+jiff = { version = "0.1.21" }
+num-cmp = { version = "0.1.0" }
+ordered-float = { version = "4.6.0", features = ["num-cmp"] }
+thiserror = { version = "2.0.8" }
+
+# optional dependencies
+serde_json = { version = "1.0.133", optional = true }
+
+[dev-dependencies]
+insta = { version = "1.41.1" }
+serde_json = { version = "1.0.133" }
 
 [lints]
 workspace = true

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod value;
-pub use value::*;
+use insta::assert_debug_snapshot;
 
-mod error;
-pub use error::*;
+use crate::Value;
 
 #[cfg(feature = "json")]
-mod json;
-
-#[cfg(test)]
-mod tests;
+#[test]
+fn test_serde_json_to_variant() {
+    let value: serde_json::Value = serde_json::from_str(include_str!("simple.json")).unwrap();
+    let value = Value::from(value);
+    assert_debug_snapshot!(value);
+}
