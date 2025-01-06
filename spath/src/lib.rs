@@ -24,6 +24,8 @@ pub use spath::*;
 #[cfg(any(feature = "json", test))]
 mod json;
 mod parser;
+#[cfg(feature = "serde")]
+mod serde;
 
 #[cfg(test)]
 mod tests;

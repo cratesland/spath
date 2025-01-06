@@ -23,7 +23,7 @@ pub type F64 = ordered_float::OrderedFloat<f64>;
 pub type Array = Vec<Value>;
 pub type Object = BTreeMap<String, Value>;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Value {
     Null,
     Bool(bool),

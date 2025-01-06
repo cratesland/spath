@@ -504,6 +504,7 @@ dependencies = [
  "num-cmp",
  "num-traits",
  "ordered-float",
+ "serde",
  "serde_json",
  "thiserror",
 ]
