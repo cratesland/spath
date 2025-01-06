@@ -141,6 +141,8 @@ pub enum TokenKind {
     Dot,
     #[token("*")]
     Asterisk,
+    #[token(":")]
+    Colon,
     #[token("?")]
     QuestionMark,
     #[token("(")]

@@ -18,8 +18,6 @@ pub use value::*;
 mod error;
 pub use error::*;
 
-mod expr;
-
 #[cfg(feature = "json")]
 mod json;
 mod parser;

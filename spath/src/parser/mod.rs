@@ -15,4 +15,5 @@
 mod error;
 mod range;
 mod runner;
+mod selector;
 mod token;
