@@ -17,6 +17,7 @@ use crate::parser::ast::{Expr, Selector};
 use crate::parser::error::ParseError;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
+use std::iter::Peekable;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -100,11 +101,8 @@ impl<'a> Parser<'a> {
         match token.kind {
             TokenKind::Asterisk => Ok(Selector::Wildcard),
             TokenKind::LiteralString => {
-                // TODO(tisonkun): unescape the string
-                let text = token.text();
-                Ok(Selector::Identifier {
-                    name: text.to_string(),
-                })
+                let name = parse_string(token)?;
+                Ok(Selector::Identifier { name })
             }
             TokenKind::LiteralInteger => {
                 // TODO(tisonkun): dispatch slice-selector
@@ -138,4 +136,82 @@ fn parse_integer(token: Token) -> Result<i64, ParseError> {
     let text = token.text();
     text.parse()
         .map_err(|err| ParseError::new(token.span, format!("{err}")))
+}
+
+fn parse_string(token: Token) -> Result<String, ParseError> {
+    let text = token.text();
+    let mut chars = text.chars();
+
+    let quote = chars.next().expect("quote char always exist");
+    if chars.next_back().map_or(true, |ch| ch != quote) {
+        return Err(ParseError::new(token.span, "mismatched quote"));
+    }
+
+    let mut chars = chars.peekable();
+    let mut output = String::new();
+
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('b') => output.push('\u{0008}'),
+                Some('f') => output.push('\u{000C}'),
+                Some('n') => output.push('\n'),
+                Some('r') => output.push('\r'),
+                Some('t') => output.push('\t'),
+                Some('\\') => output.push('\\'),
+                Some('u') => output.push(
+                    unescape_unicode(&mut chars)
+                        .ok_or_else(|| ParseError::new(token.span, "invalid escape sequence"))?,
+                ),
+                Some('x') => output.push(
+                    unescape_byte(&mut chars)
+                        .ok_or_else(|| ParseError::new(token.span, "invalid escape sequence"))?,
+                ),
+                Some(c) if c.is_digit(8) => output.push(unescape_octal(c, &mut chars)),
+                Some(c) if c == quote => output.push(quote),
+                _ => return Err(ParseError::new(token.span, "invalid escape sequence")),
+            };
+        } else if c == quote {
+            return Err(ParseError::new(token.span, "intermediately close quote"));
+        } else {
+            output.push(c);
+        }
+    }
+
+    Ok(output)
+}
+
+fn unescape_unicode(chars: &mut Peekable<impl Iterator<Item = char>>) -> Option<char> {
+    let mut code = 0;
+
+    for c in chars.take(4) {
+        code = code * 16 + c.to_digit(16)?;
+    }
+
+    char::from_u32(code)
+}
+
+fn unescape_byte(chars: &mut Peekable<impl Iterator<Item = char>>) -> Option<char> {
+    let mut byte = 0;
+
+    for c in chars.take(2) {
+        byte = byte * 16 + c.to_digit(16)?;
+    }
+
+    char::from_u32(byte)
+}
+
+fn unescape_octal(c1: char, chars: &mut Peekable<impl Iterator<Item = char>>) -> char {
+    let mut oct = c1.to_digit(8).unwrap();
+
+    while let Some(c) = chars.peek() {
+        if let Some(digit) = c.to_digit(8) {
+            oct = oct * 8 + digit;
+            chars.next();
+        } else {
+            break;
+        }
+    }
+
+    char::from_u32(oct).unwrap()
 }
