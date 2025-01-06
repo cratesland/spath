@@ -19,11 +19,17 @@ use std::hash::Hasher;
 
 use num_cmp::NumCmp;
 
+/// An ordered floating point number. Provided by the [`ordered-float`] crate.
 pub type F64 = ordered_float::OrderedFloat<f64>;
+
+/// The type of array of values.
 pub type Array = Vec<Value>;
+
+/// The type of object values.
 pub type Object = BTreeMap<String, Value>;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
+/// A variant value.
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Value {
     Null,
     Bool(bool),
@@ -72,6 +78,7 @@ impl fmt::Debug for Value {
     }
 }
 
+/// A variant number value.
 #[derive(Copy, Clone)]
 pub enum Number {
     I64(i64),

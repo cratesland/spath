@@ -12,6 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! # SPath: Query expressions for semi-structured data
+//!
+//! You can use it as a drop-in replacement for JSONPath, but also for other semi-structured data
+//! formats like TOML or user-defined variants.
+//!
+//! ## Examples
+//!
+//! Here is a quick example that shows how to use the `spath` crate to query
+//! JSONPath alike expression over JSON data:
+//!
+//! ```rust
+//! # #[cfg(feature = "json")]
+//! # {
+//! use serde_json::json;
+//! use serde_json::Value as JsonValue;
+//! use spath::SPath;
+//! use spath::Value;
+//!
+//! let data = json!({
+//!   "name": "John Doe",
+//!   "age": 43,
+//!   "phones": [
+//!     "+44 1234567",
+//!     "+44 2345678"
+//!   ]
+//! });
+//!
+//! let spath = SPath::new("$.phones[1]").unwrap();
+//! let value = Value::from(data);
+//! let result = spath.eval(&value).unwrap();
+//! assert_eq!(JsonValue::from(result), json!("+44 2345678"));
+//! # }
+//! ```
+//!
+//! ## Feature flags
+//!
+//! - `json`: Enabled conversion between `serde_json::Value` and [`Value`].
+//! - `serde`: Implement `serde::Serialize` for [`Number`] and [`Value`], plus `serde::Deserialize`
+//!   for [`Number`].
+
 mod value;
 pub use value::*;
 
@@ -24,6 +64,8 @@ pub use spath::*;
 #[cfg(any(feature = "json", test))]
 mod json;
 mod parser;
+#[cfg(feature = "serde")]
+mod serde;
 
 #[cfg(test)]
 mod tests;
