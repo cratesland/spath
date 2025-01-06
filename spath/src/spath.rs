@@ -67,15 +67,18 @@ impl EvalSegment {
     fn eval(&self, root: &Value, value: Value) -> Option<Value> {
         match self {
             EvalSegment::Child { selectors } => {
-                let mut result = value;
+                let mut result = vec![];
                 for selector in selectors {
-                    if let Some(res) = selector.eval(root, result) {
-                        result = res;
-                    } else {
-                        return None;
+                    if let Some(res) = selector.eval(root, &value) {
+                        result.push(res);
                     }
                 }
-                Some(result)
+
+                if selectors.len() <= 1 {
+                    result.pop()
+                } else {
+                    Some(Value::Array(result))
+                }
             }
             EvalSegment::Descendant {
                 selectors: _selectors,
@@ -119,9 +122,9 @@ enum EvalSelector {
 }
 
 impl EvalSelector {
-    fn eval(&self, _root: &Value, value: Value) -> Option<Value> {
+    fn eval(&self, _root: &Value, value: &Value) -> Option<Value> {
         match self {
-            EvalSelector::Wildcard => Some(value),
+            EvalSelector::Wildcard => Some(value.clone()),
             EvalSelector::Identifier { name } => {
                 if let Value::Object(map) = value {
                     map.get(name).cloned()
