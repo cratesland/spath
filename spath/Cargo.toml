@@ -32,6 +32,7 @@ rust-version.workspace = true
 [features]
 default = []
 json = ["dep:serde_json"]
+toml = ["dep:toml"]
 
 [dependencies]
 logos = { version = "0.15.0" }
@@ -40,6 +41,7 @@ thiserror = { version = "2.0.8" }
 
 # optional dependencies
 serde_json = { version = "1.0.133", optional = true }
+toml = { version = "0.8.19", optional = true }
 
 [dev-dependencies]
 googletest = { version = "0.13.0" }

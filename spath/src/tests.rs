@@ -18,9 +18,15 @@ use googletest::prelude::eq;
 use googletest::prelude::some;
 use insta::assert_compact_json_snapshot;
 
-use crate::json_testdata;
+use crate::manifest_dir;
 use crate::SPath;
 use crate::VariantValue;
+
+fn json_testdata(filename: &str) -> serde_json::Value {
+    let path = manifest_dir().join("testdata").join(filename);
+    let content = std::fs::read_to_string(path).unwrap();
+    serde_json::from_str(&content).unwrap()
+}
 
 fn eval_spath<T: VariantValue>(spath: &str, value: &T) -> Option<T> {
     let spath = SPath::new(spath).unwrap();
