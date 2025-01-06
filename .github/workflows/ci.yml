@@ -64,10 +64,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust-version }}
-      - name: Run unit tests with all features
-        run: cargo x test --no-capture --all-features
-        shell: bash
-      - name: Run unit tests with feature matrix
+      - name: Run unit tests
         run: cargo x test --no-capture
         shell: bash
 
