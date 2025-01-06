@@ -14,7 +14,7 @@
 
 [package]
 name = "spath"
-version = "0.0.1"
+version = "0.1.0"
 
 description = """
 SPath is query expressions for semi-structured data. You can use it
