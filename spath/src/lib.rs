@@ -19,7 +19,6 @@ mod error;
 pub use error::*;
 
 mod expr;
-pub use expr::*;
 
 #[cfg(feature = "json")]
 mod json;

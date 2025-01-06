@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::range::Range;
+use crate::parser::error::ParseError;
+use crate::parser::token::Token;
+use crate::parser::token::Tokenizer;
 
-#[derive(Debug, thiserror::Error)]
-#[error("{message}")]
-pub struct ParseError {
-    span: Range,
-    message: String,
-}
-
-impl ParseError {
-    pub fn new(span: Range, message: impl Into<String>) -> Self {
-        Self {
-            span,
-            message: message.into(),
-        }
-    }
+pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
+    Tokenizer::new(source).collect::<Result<_, _>>()
 }

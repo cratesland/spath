@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use serde_json::Value as JsonValue;
+
 use crate::Number;
 use crate::Value;
-
-use serde_json::Value as JsonValue;
 
 #[cfg(test)]
 mod tests;
