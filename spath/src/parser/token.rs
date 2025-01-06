@@ -156,11 +156,12 @@ pub enum TokenKind {
     #[token("]")]
     RBracket,
 
-    // Keywords
-    #[token("FALSE", ignore(ascii_case))]
+    // §2.3.5.1. Syntax
+    // true, false, and null are lowercase only (case-sensitive).
+    #[token("false")]
     FALSE,
-    #[token("NULL", ignore(ascii_case))]
+    #[token("null")]
     NULL,
-    #[token("TRUE", ignore(ascii_case))]
+    #[token("true")]
     TRUE,
 }
