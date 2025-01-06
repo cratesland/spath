@@ -61,9 +61,28 @@ impl<'a> Parser<'a> {
                 let selectors = self.parse_bracketed_selector()?;
                 Ok(Some(Segment::Child { selectors }))
             }
-            // TODO(tisonkun): handle ..(descendant segment), .identifier, and .*
+            TokenKind::Dot => {
+                let token = self.next_token();
+                match token.kind {
+                    TokenKind::Asterisk => Ok(Some(Segment::Child {
+                        selectors: vec![Selector::Wildcard],
+                    })),
+                    TokenKind::Ident => {
+                        let name = token.text().to_string();
+                        Ok(Some(Segment::Descendant {
+                            selectors: vec![Selector::Identifier { name }],
+                        }))
+                    }
+                    TokenKind::Dot => self.parse_descendant_segment().map(Some),
+                    _ => Err(ParseError::unexpected_token(token.span)),
+                }
+            }
             _ => Err(ParseError::unexpected_token(token.span)),
         }
+    }
+
+    fn parse_descendant_segment(&mut self) -> Result<Segment, ParseError> {
+        todo!()
     }
 
     fn parse_bracketed_selector(&mut self) -> Result<Vec<Selector>, ParseError> {

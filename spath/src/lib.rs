@@ -18,9 +18,11 @@ pub use value::*;
 mod error;
 pub use error::*;
 
+mod spath;
+pub use spath::*;
+
 #[cfg(feature = "json")]
 mod json;
-#[allow(dead_code)]
 mod parser;
 
 #[cfg(test)]
