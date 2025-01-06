@@ -25,6 +25,7 @@ use crate::parser::runner::run_parser;
 use crate::BindError;
 use crate::Value;
 
+/// A compiled SPath query.
 #[derive(Debug, Clone)]
 pub struct SPath {
     segments: Vec<EvalSegment>,
@@ -281,6 +282,7 @@ fn bounds(start: i64, end: i64, step: i64, len: i64) -> (i64, i64) {
     }
 }
 
+/// A binder used to compile the SPath query.
 #[derive(Default, Debug, Clone)]
 #[non_exhaustive]
 pub struct Binder {
