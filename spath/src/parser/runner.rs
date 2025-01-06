@@ -13,9 +13,14 @@
 // limitations under the License.
 
 use crate::parser::error::ParseError;
+use crate::parser::ast::Selector;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
 
 pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
     Tokenizer::new(source).collect::<Result<_, _>>()
+}
+
+pub fn run_parser(source: &str) -> Result<Vec<Selector>, ParseError> {
+    let tokens = run_tokenizer(source)?;
 }

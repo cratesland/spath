@@ -1,4 +1,18 @@
 #[derive(Debug, Clone)]
+pub enum Segment {
+    /// §2.5.1 Child Segment.
+    Child {
+        /// The selectors of the child segment.
+        selector: Vec<Selector>,
+    },
+    /// §2.5.2 Descendant Segment.
+    Descendant {
+        /// The selectors of the descendant segment.
+        selector: Vec<Selector>,
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Selector {
     /// §2.3.2 Wildcard Selector.
     Asterisk,
