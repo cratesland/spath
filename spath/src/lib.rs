@@ -21,7 +21,7 @@ pub use error::*;
 mod spath;
 pub use spath::*;
 
-#[cfg(feature = "json")]
+#[cfg(any(feature = "json", test))]
 mod json;
 mod parser;
 

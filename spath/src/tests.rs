@@ -45,6 +45,19 @@ fn test_basic_name_selector() {
     assert_debug_snapshot!(result, @"'red'");
     let result = eval_spath(r#"$.store.book.*"#, &value).unwrap();
     assert_debug_snapshot!(result, @r#"[{"author":'Nigel Rees',"category":'reference',"price":8.95,"title":'Sayings of the Century'},{"author":'Evelyn Waugh',"category":'fiction',"price":12.99,"title":'Sword of Honour'},{"author":'Herman Melville',"category":'fiction',"isbn":'0-553-21311-3',"price":8.99,"title":'Moby Dick'},{"author":'J. R. R. Tolkien',"category":'fiction',"isbn":'0-395-19395-8',"price":22.99,"title":'The Lord of the Rings'}]"#);
+
+    let value = json_testdata("rfc-9535-example-2.json");
+    let value = Value::from(value);
+
+    // §2.3.1.3 (Example) Table 5: Name Selector Examples
+    let result = eval_spath(r#"$.o['j j']"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"{"k.k":3}"#);
+    let result = eval_spath(r#"$.o['j j']['k.k']	"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"3");
+    let result = eval_spath(r#"$.o["j j"]["k.k"]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"3");
+    let result = eval_spath(r#"$["'"]["@"]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"2");
 }
 
 #[test]
@@ -92,6 +105,7 @@ fn test_basic_child_and_descendant_segment() {
 
     let value = json_testdata("rfc-9535-example-9.json");
     let value = Value::from(value);
+
     // §2.5.2.3 (Example) Table 16: Descendant Segment Examples
     let result = eval_spath(r#"$..j"#, &value).unwrap();
     assert_debug_snapshot!(result, @"[1,4]");
