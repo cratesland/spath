@@ -1,5 +1,23 @@
-use crate::{ConcreteVariantArray, ConcreteVariantObject, VariantValue};
-use serde_json::{Map, Value};
+// Copyright 2024 tison <wander4096@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use serde_json::Map;
+use serde_json::Value;
+
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
+use crate::VariantValue;
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
@@ -29,6 +47,10 @@ impl VariantValue for Value {
 impl ConcreteVariantArray for Vec<Value> {
     type Value = Value;
 
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+
     fn len(&self) -> usize {
         (**self).len()
     }
@@ -44,6 +66,10 @@ impl ConcreteVariantArray for Vec<Value> {
 
 impl ConcreteVariantObject for Map<String, Value> {
     type Value = Value;
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
 
     fn len(&self) -> usize {
         self.len()

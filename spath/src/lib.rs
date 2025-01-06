@@ -49,8 +49,8 @@
 //! ## Feature flags
 //!
 //! - `json`: Enabled conversion between `serde_json::Value` and [`VariantValue`].
-//! - `serde`: Implement `serde::Serialize` for [`Number`] and [`VariantValue`], plus `serde::Deserialize`
-//!   for [`Number`].
+//! - `serde`: Implement `serde::Serialize` for [`Number`] and [`VariantValue`], plus
+//!   `serde::Deserialize` for [`Number`].
 
 mod value;
 pub use value::*;

@@ -25,6 +25,7 @@ pub trait VariantValue: Clone {
 
 pub trait ConcreteVariantArray {
     type Value: VariantValue<VariantArray = Self>;
+    fn is_empty(&self) -> bool;
     fn len(&self) -> usize;
     fn get(&self, index: usize) -> Option<&Self::Value>;
     fn iter(&self) -> impl Iterator<Item = &Self::Value>;
@@ -32,6 +33,7 @@ pub trait ConcreteVariantArray {
 
 pub trait ConcreteVariantObject {
     type Value: VariantValue<VariantObject = Self>;
+    fn is_empty(&self) -> bool;
     fn len(&self) -> usize;
     fn get(&self, key: &str) -> Option<&Self::Value>;
     fn values(&self) -> impl Iterator<Item = &Self::Value>;

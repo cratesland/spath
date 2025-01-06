@@ -22,8 +22,10 @@ use crate::parser::ast::RootPathQuery;
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
+use crate::BindError;
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
 use crate::VariantValue;
-use crate::{BindError, ConcreteVariantArray, ConcreteVariantObject};
 
 /// A compiled SPath query.
 #[derive(Debug, Clone)]
@@ -169,7 +171,11 @@ impl EvalSelector {
                 // The wildcard selector selects nothing from a primitive JSON value.
                 if let Some(vec) = value.as_array() {
                     Some(T::make_array(vec.iter().cloned()))
-                } else { value.as_object().map(|map| T::make_array(map.values().cloned())) }
+                } else {
+                    value
+                        .as_object()
+                        .map(|map| T::make_array(map.values().cloned()))
+                }
             }
             EvalSelector::Identifier { name } => {
                 if let Some(map) = value.as_object() {
