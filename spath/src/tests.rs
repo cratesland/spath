@@ -61,11 +61,27 @@ fn test_basic_name_selector() {
 }
 
 #[test]
+fn test_basic_wildcard_selector() {
+    let value = json_testdata("rfc-9535-example-3.json");
+    let value = Value::from(value);
+
+    // §2.3.2.3 (Example) Table 6: Wildcard Selector Examples
+    let result = eval_spath(r#"$[*]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[[5,3],{"j":1,"k":2}]"#);
+    let result = eval_spath(r#"$.o[*]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"[1,2]");
+    let result = eval_spath(r#"$.o[*, *]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"[[1,2],[1,2]]");
+    let result = eval_spath(r#"$.a[*]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"[5,3]");
+}
+
+#[test]
 fn test_basic_index_slice_selector() {
     let value = json_testdata("rfc-9535-example-4.json");
     let value = Value::from(value);
 
-    // §2.3.4.3 (Example) Table 7: Index Selector Examples
+    // §2.3.3.3 (Example) Table 7: Index Selector Examples
     let result = eval_spath(r#"$[1]"#, &value).unwrap();
     assert_debug_snapshot!(result, @"'b'");
     let result = eval_spath(r#"$[0]"#, &value).unwrap();
