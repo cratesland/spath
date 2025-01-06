@@ -98,7 +98,7 @@ pub enum TokenKind {
     #[regex(r"[ \t\r\n\f]+", logos::skip)]
     Whitespace,
 
-    #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]*"#)]
+    #[regex(r#"[_a-zA-Z\u0080-\uFFFF][_a-zA-Z0-9\u0080-\uFFFF]*"#)]
     Ident,
 
     #[regex(r#"'([^'\\]|\\.)*'"#)]
