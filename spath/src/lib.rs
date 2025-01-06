@@ -19,6 +19,8 @@
 //!
 //! ## Examples
 //!
+//! ### JSON
+//!
 //! Here is a quick example that shows how to use the `spath` crate to query
 //! JSONPath alike expression over JSON data:
 //!
@@ -45,11 +47,39 @@
 //! # }
 //! ```
 //!
+//! ### TOML
+//!
+//! Here is a quick example that shows how to use the `spath` crate to query
+//! JSONPath alike expression over TOML data:
+//!
+//! ```rust
+//! # #[cfg(feature = "toml")]
+//! # {
+//! use spath::SPath;
+//! use spath::VariantValue;
+//! use toml::Value;
+//!
+//! let data = r#"
+//! [package]
+//! name = "spath"
+//! version = "0.1.0"
+//! authors = ["tison"]
+//!
+//! [dependencies]
+//! serde = "1.0"
+//! "#;
+//!
+//! let data = data.parse::<Value>().unwrap();
+//! let spath = SPath::new("$.package.name").unwrap();
+//! let result = spath.eval(&data).unwrap();
+//! assert_eq!(result, Value::String("spath".to_string()));
+//! # }
+//! ```
+//!
 //! ## Feature flags
 //!
-//! - `json`: Enabled conversion between `serde_json::Value` and [`VariantValue`].
-//! - `serde`: Implement `serde::Serialize` for [`Number`] and [`VariantValue`], plus
-//!   `serde::Deserialize` for [`Number`].
+//! - `json`: impl [`VariantValue`] for `serde_json::Value`.
+//! - `toml`: impl [`VariantValue`] for `toml::Value`.
 
 mod value;
 pub use value::*;

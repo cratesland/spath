@@ -11,4 +11,4 @@ All notable changes to this project will be documented in this file.
 
 ### New features
 
-* Add a new feature flag `toml` for implementing `VaraintValue` over toml's `Value`.
+* Add a new feature flag `toml` for implementing `VariantValue` over toml's `Value`.
