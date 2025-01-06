@@ -23,7 +23,9 @@ use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
 use crate::BindError;
-use crate::Value;
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
+use crate::VariantValue;
 
 /// A compiled SPath query.
 #[derive(Debug, Clone)]
@@ -39,16 +41,16 @@ impl SPath {
         Ok(binder.bind(segments))
     }
 
-    pub fn eval(&self, root: &Value) -> Option<Value> {
-        let mut result = root.clone();
-        for segment in &self.segments {
-            if let Some(res) = segment.eval(root, result) {
-                result = res;
-            } else {
-                return None;
-            }
+    pub fn eval<T: VariantValue>(&self, root: &T) -> Option<T> {
+        if self.segments.is_empty() {
+            return Some(root.clone());
         }
-        Some(result.clone())
+
+        let mut result = self.segments[0].eval(root, root)?;
+        for segment in &self.segments[1..] {
+            result = segment.eval(root, &result)?;
+        }
+        Some(result)
     }
 }
 
@@ -67,12 +69,12 @@ enum EvalSegment {
 }
 
 impl EvalSegment {
-    fn eval(&self, root: &Value, value: Value) -> Option<Value> {
+    fn eval<T: VariantValue>(&self, root: &T, value: &T) -> Option<T> {
         match self {
             EvalSegment::Child { selectors } => {
                 let mut result = vec![];
                 for selector in selectors {
-                    if let Some(res) = selector.eval(root, &value) {
+                    if let Some(res) = selector.eval(root, value) {
                         result.push(res);
                     }
                 }
@@ -80,7 +82,7 @@ impl EvalSegment {
                 if selectors.len() <= 1 {
                     result.pop()
                 } else {
-                    Some(Value::Array(result))
+                    Some(T::make_array(result))
                 }
             }
             EvalSegment::Descendant { selectors } => {
@@ -106,19 +108,19 @@ impl EvalSegment {
                 let mut queue = vec![value];
                 while let Some(value) = queue.pop() {
                     for selector in selectors {
-                        if let Some(res) = selector.eval(root, &value) {
-                            result.push(res.clone());
+                        if let Some(res) = selector.eval(root, value) {
+                            result.push(res);
                         }
                     }
 
                     // visit the descendants
-                    match value {
-                        Value::Object(map) => queue.extend(map.into_values()),
-                        Value::Array(vec) => queue.extend(vec),
-                        _ => {}
+                    if let Some(map) = value.as_object() {
+                        queue.extend(map.values());
+                    } else if let Some(vec) = value.as_array() {
+                        queue.extend(vec.iter());
                     }
                 }
-                Some(Value::Array(result))
+                Some(T::make_array(result))
             }
         }
     }
@@ -157,9 +159,9 @@ enum EvalSelector {
 }
 
 impl EvalSelector {
-    fn eval(&self, _root: &Value, value: &Value) -> Option<Value> {
+    fn eval<T: VariantValue>(&self, _root: &T, value: &T) -> Option<T> {
         match self {
-            EvalSelector::Wildcard => match value {
+            EvalSelector::Wildcard => {
                 // §2.3.2.2 (Wildcard Selector) Semantics
                 //
                 // A wildcard selector selects the nodes of all children of an object or array.
@@ -167,19 +169,23 @@ impl EvalSelector {
                 // Note that the children of an object are its member values, not its member names.
                 //
                 // The wildcard selector selects nothing from a primitive JSON value.
-                Value::Array(vec) => Some(Value::Array(vec.clone())),
-                Value::Object(map) => Some(Value::Array(map.values().cloned().collect())),
-                _ => None,
-            },
+                if let Some(vec) = value.as_array() {
+                    Some(T::make_array(vec.iter().cloned()))
+                } else {
+                    value
+                        .as_object()
+                        .map(|map| T::make_array(map.values().cloned()))
+                }
+            }
             EvalSelector::Identifier { name } => {
-                if let Value::Object(map) = value {
+                if let Some(map) = value.as_object() {
                     map.get(name).cloned()
                 } else {
                     None
                 }
             }
             EvalSelector::Index { index } => {
-                if let Value::Array(vec) = value {
+                if let Some(vec) = value.as_array() {
                     let index = resolve_index(*index, vec.len())?;
                     vec.get(index).cloned()
                 } else {
@@ -187,12 +193,12 @@ impl EvalSelector {
                 }
             }
             EvalSelector::Slice { start, end, step } => {
-                if let Value::Array(vec) = value {
+                if let Some(vec) = value.as_array() {
                     let step = *step;
                     if step == 0 {
                         // §2.3.4.2.2. Normative Semantics
                         // When step = 0, no elements are selected, and the result array is empty.
-                        return Some(Value::Array(vec![]));
+                        return Some(T::make_array(vec![]));
                     }
 
                     let len = vec.len().to_i64().unwrap_or(i64::MAX);
@@ -219,7 +225,7 @@ impl EvalSelector {
                             // step > 0
                             let mut i = lower;
                             while i < upper {
-                                selected.push(vec[i as usize].clone());
+                                selected.push(vec.get(i as usize).unwrap().clone());
                                 i += step;
                             }
                         }
@@ -227,13 +233,13 @@ impl EvalSelector {
                             // step < 0
                             let mut i = upper;
                             while lower < i {
-                                selected.push(vec[i as usize].clone());
+                                selected.push(vec.get(i as usize).unwrap().clone());
                                 i += step;
                             }
                         }
                         Ordering::Equal => unreachable!("step is guaranteed not zero here"),
                     }
-                    Some(Value::Array(selected))
+                    Some(T::make_array(selected))
                 } else {
                     None
                 }

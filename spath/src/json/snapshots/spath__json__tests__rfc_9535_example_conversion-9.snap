@@ -1,6 +1,0 @@
----
-source: spath/src/json/tests.rs
-expression: "assert_testdata_identical(\"rfc-9535-example-9.json\")"
-snapshot_kind: text
----
-{"a":[5,3,[{"j":4},{"k":6}]],"o":{"j":1,"k":2}}

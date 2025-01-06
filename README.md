@@ -30,24 +30,23 @@ Here is a quick example that shows how to use the `spath` crate to query JSONPat
 
 ```rust
 use serde_json::json;
-use serde_json::Value as JsonValue;
+use serde_json::Value;
 use spath::SPath;
-use spath::Value;
+use spath::VariantValue;
 
 fn main() {
     let data = json!({
-        "name": "John Doe",
-        "age": 43,
-        "phones": [
-            "+44 1234567",
-            "+44 2345678"
-        ]
+      "name": "John Doe",
+      "age": 43,
+      "phones": [
+        "+44 1234567",
+        "+44 2345678"
+      ]
     });
 
     let spath = SPath::new("$.phones[1]").unwrap();
-    let value = Value::from(data);
-    let result = spath.eval(&value).unwrap();
-    assert_eq!(JsonValue::from(result), json!("+44 2345678"));
+    let result = spath.eval(&data).unwrap();
+    assert_eq!(result, json!("+44 2345678"));
 }
 ```
 
