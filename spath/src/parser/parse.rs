@@ -82,7 +82,23 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_descendant_segment(&mut self) -> Result<Segment, ParseError> {
-        todo!()
+        let token = self.next_token();
+        match token.kind {
+            TokenKind::LBracket => {
+                let selectors = self.parse_bracketed_selector()?;
+                Ok((Segment::Descendant { selectors }))
+            }
+            TokenKind::Asterisk => Ok((Segment::Descendant {
+                selectors: vec![Selector::Wildcard],
+            })),
+            TokenKind::Ident => {
+                let name = token.text().to_string();
+                Ok((Segment::Descendant {
+                    selectors: vec![Selector::Identifier { name }],
+                }))
+            }
+            _ => Err(ParseError::unexpected_token(token.span)),
+        }
     }
 
     fn parse_bracketed_selector(&mut self) -> Result<Vec<Selector>, ParseError> {
