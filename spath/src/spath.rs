@@ -34,13 +34,16 @@ pub struct SPath {
 }
 
 impl SPath {
-    pub fn new(source: &str) -> Result<Self, BindError> {
+    /// Create a new SPath query from the given expression.
+    pub fn new(expr: &str) -> Result<Self, BindError> {
+        // TODO(tisonkun): better error reporting
         let RootPathQuery { segments } =
-            run_parser(source).map_err(|err| BindError(format!("{err}")))?;
+            run_parser(expr).map_err(|err| BindError(format!("{err}")))?;
         let binder = Binder {};
         Ok(binder.bind(segments))
     }
 
+    /// Evaluate the SPath query on the given root variant value.
     pub fn eval<T: VariantValue>(&self, root: &T) -> Option<T> {
         if self.segments.is_empty() {
             return Some(root.clone());
