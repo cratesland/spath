@@ -80,3 +80,35 @@ fn test_basic_array_slice_selector() {
     let result = eval_spath(r#"$[::-1]"#, &value).unwrap();
     assert_debug_snapshot!(result, @"['g','f','e','d','c','b','a']");
 }
+
+#[test]
+fn test_basic_child_and_descendant_segment() {
+    let value = json_testdata("rfc-9535-example-8.json");
+    let value = Value::from(value);
+
+    // §2.5.1.3 (Example) Table 15: Child Segment Examples
+    let result = eval_spath(r#"$[0, 3]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['a','d']");
+    let result = eval_spath(r#"$[0:2, 5]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"[['a','b'],'f']");
+    let result = eval_spath(r#"$[0,0]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['a','a']");
+
+    let value = json_testdata("rfc-9535-example-9.json");
+    let value = Value::from(value);
+    // §2.5.2.3 (Example) Table 16: Descendant Segment Examples
+    let result = eval_spath(r#"$..j"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"[1,4]");
+    let result = eval_spath(r#"$..[0]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[5,{"j":4}]"#);
+    let result = eval_spath(r#"$..*"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[{"a":[5,3,[{"j":4},{"k":6}]],"o":{"j":1,"k":2}},{"j":1,"k":2},2,1,[5,3,[{"j":4},{"k":6}]],[{"j":4},{"k":6}],{"k":6},6,{"j":4},4,3,5]"#);
+    let result = eval_spath(r#"$..[*]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[{"a":[5,3,[{"j":4},{"k":6}]],"o":{"j":1,"k":2}},{"j":1,"k":2},2,1,[5,3,[{"j":4},{"k":6}]],[{"j":4},{"k":6}],{"k":6},6,{"j":4},4,3,5]"#);
+    let result = eval_spath(r#"$..o"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[{"j":1,"k":2}]"#);
+    let result = eval_spath(r#"$.o..[*, *]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[{"j":1,"k":2},{"j":1,"k":2},2,2,1,1]"#);
+    let result = eval_spath(r#"$.a..[0, 1]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @r#"[5,3,{"j":4},{"k":6}]"#);
+}
