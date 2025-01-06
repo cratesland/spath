@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub trait Value: Clone {
-    type ArrayRef: ConcreteArrayRef<Value = Self>;
-    type ObjectRef: ConcreteObjectRef<Value = Self>;
+pub trait VariantValue: Clone {
+    type ArrayRef<'a>: ConcreteArrayRef<'a, Value = Self>;
+    type ObjectRef<'a>: ConcreteObjectRef<'a, Value = Self>;
     fn is_array(&self) -> bool;
     fn is_object(&self) -> bool;
     fn as_array(&self) -> Option<Self::ArrayRef>;
     fn as_object(&self) -> Option<Self::ObjectRef>;
 }
 
-pub trait ConcreteArrayRef {
-    type Value: Value<ArrayRef = Self>;
+pub trait ConcreteArrayRef<'a> {
+    type Value: VariantValue<ArrayRef = Self>;
     fn len(&self) -> usize;
     fn get(&self, index: usize) -> Option<&Self::Value>;
 }
 
-pub trait ConcreteObjectRef {
-    type Value: Value<ObjectRef = Self>;
+pub trait ConcreteObjectRef<'a> {
+    type Value: VariantValue<ObjectRef = Self>;
     fn len(&self) -> usize;
     fn get(&self, key: &str) -> Option<&Self::Value>;
 }

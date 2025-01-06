@@ -28,7 +28,7 @@
 //! use serde_json::json;
 //! use serde_json::Value as JsonValue;
 //! use spath::SPath;
-//! use spath::Value;
+//! use spath::VariantValue;
 //!
 //! let data = json!({
 //!   "name": "John Doe",
@@ -40,7 +40,7 @@
 //! });
 //!
 //! let spath = SPath::new("$.phones[1]").unwrap();
-//! let value = Value::from(data);
+//! let value = VariantValue::from(data);
 //! let result = spath.eval(&value).unwrap();
 //! assert_eq!(JsonValue::from(result), json!("+44 2345678"));
 //! # }
@@ -48,8 +48,8 @@
 //!
 //! ## Feature flags
 //!
-//! - `json`: Enabled conversion between `serde_json::Value` and [`Value`].
-//! - `serde`: Implement `serde::Serialize` for [`Number`] and [`Value`], plus `serde::Deserialize`
+//! - `json`: Enabled conversion between `serde_json::Value` and [`VariantValue`].
+//! - `serde`: Implement `serde::Serialize` for [`Number`] and [`VariantValue`], plus `serde::Deserialize`
 //!   for [`Number`].
 
 mod value;
@@ -64,8 +64,6 @@ pub use spath::*;
 #[cfg(any(feature = "json", test))]
 mod json;
 mod parser;
-#[cfg(feature = "serde")]
-mod serde;
 
 #[cfg(test)]
 mod tests;

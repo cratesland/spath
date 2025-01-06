@@ -23,7 +23,7 @@ use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
 use crate::BindError;
-use crate::Value;
+use crate::VariantValue;
 
 /// A compiled SPath query.
 #[derive(Debug, Clone)]
@@ -39,7 +39,7 @@ impl SPath {
         Ok(binder.bind(segments))
     }
 
-    pub fn eval(&self, root: &Value) -> Option<Value> {
+    pub fn eval(&self, root: &VariantValue) -> Option<VariantValue> {
         let mut result = root.clone();
         for segment in &self.segments {
             if let Some(res) = segment.eval(root, result) {
@@ -67,7 +67,7 @@ enum EvalSegment {
 }
 
 impl EvalSegment {
-    fn eval(&self, root: &Value, value: Value) -> Option<Value> {
+    fn eval(&self, root: &VariantValue, value: VariantValue) -> Option<VariantValue> {
         match self {
             EvalSegment::Child { selectors } => {
                 let mut result = vec![];
@@ -80,7 +80,7 @@ impl EvalSegment {
                 if selectors.len() <= 1 {
                     result.pop()
                 } else {
-                    Some(Value::Array(result))
+                    Some(VariantValue::Array(result))
                 }
             }
             EvalSegment::Descendant { selectors } => {
@@ -113,12 +113,12 @@ impl EvalSegment {
 
                     // visit the descendants
                     match value {
-                        Value::Object(map) => queue.extend(map.into_values()),
-                        Value::Array(vec) => queue.extend(vec),
+                        VariantValue::Object(map) => queue.extend(map.into_values()),
+                        VariantValue::Array(vec) => queue.extend(vec),
                         _ => {}
                     }
                 }
-                Some(Value::Array(result))
+                Some(VariantValue::Array(result))
             }
         }
     }
@@ -157,7 +157,7 @@ enum EvalSelector {
 }
 
 impl EvalSelector {
-    fn eval(&self, _root: &Value, value: &Value) -> Option<Value> {
+    fn eval(&self, _root: &VariantValue, value: &VariantValue) -> Option<VariantValue> {
         match self {
             EvalSelector::Wildcard => match value {
                 // §2.3.2.2 (Wildcard Selector) Semantics
@@ -167,19 +167,19 @@ impl EvalSelector {
                 // Note that the children of an object are its member values, not its member names.
                 //
                 // The wildcard selector selects nothing from a primitive JSON value.
-                Value::Array(vec) => Some(Value::Array(vec.clone())),
-                Value::Object(map) => Some(Value::Array(map.values().cloned().collect())),
+                VariantValue::Array(vec) => Some(VariantValue::Array(vec.clone())),
+                VariantValue::Object(map) => Some(VariantValue::Array(map.values().cloned().collect())),
                 _ => None,
             },
             EvalSelector::Identifier { name } => {
-                if let Value::Object(map) = value {
+                if let VariantValue::Object(map) = value {
                     map.get(name).cloned()
                 } else {
                     None
                 }
             }
             EvalSelector::Index { index } => {
-                if let Value::Array(vec) = value {
+                if let VariantValue::Array(vec) = value {
                     let index = resolve_index(*index, vec.len())?;
                     vec.get(index).cloned()
                 } else {
@@ -187,12 +187,12 @@ impl EvalSelector {
                 }
             }
             EvalSelector::Slice { start, end, step } => {
-                if let Value::Array(vec) = value {
+                if let VariantValue::Array(vec) = value {
                     let step = *step;
                     if step == 0 {
                         // §2.3.4.2.2. Normative Semantics
                         // When step = 0, no elements are selected, and the result array is empty.
-                        return Some(Value::Array(vec![]));
+                        return Some(VariantValue::Array(vec![]));
                     }
 
                     let len = vec.len().to_i64().unwrap_or(i64::MAX);
@@ -233,7 +233,7 @@ impl EvalSelector {
                         }
                         Ordering::Equal => unreachable!("step is guaranteed not zero here"),
                     }
-                    Some(Value::Array(selected))
+                    Some(VariantValue::Array(selected))
                 } else {
                     None
                 }
