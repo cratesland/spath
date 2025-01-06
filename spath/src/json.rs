@@ -1,9 +1,9 @@
-use crate::{ConcreteArrayRef, ConcreteObjectRef, VariantValue};
+use crate::{ConcreteVariantArray, ConcreteVariantObject, VariantValue};
 use serde_json::{Map, Value};
 
 impl VariantValue for Value {
-    type ArrayRef<'a> = &'a Vec<Value>;
-    type ObjectRef<'a> = &'a Map<String, Value>;
+    type VariantArray = Vec<Value>;
+    type VariantObject = Map<String, Value>;
 
     fn is_array(&self) -> bool {
         self.is_array()
@@ -13,11 +13,11 @@ impl VariantValue for Value {
         self.is_object()
     }
 
-    fn as_array(&self) -> Option<Self::ArrayRef> {
+    fn as_array(&self) -> Option<&Self::VariantArray> {
         self.as_array()
     }
 
-    fn as_object(&self) -> Option<Self::ObjectRef> {
+    fn as_object(&self) -> Option<&Self::VariantObject> {
         self.as_object()
     }
 
@@ -26,7 +26,7 @@ impl VariantValue for Value {
     }
 }
 
-impl<'a> ConcreteArrayRef<'a> for &'a Vec<Value> {
+impl ConcreteVariantArray for Vec<Value> {
     type Value = Value;
 
     fn len(&self) -> usize {
@@ -42,18 +42,18 @@ impl<'a> ConcreteArrayRef<'a> for &'a Vec<Value> {
     }
 }
 
-impl<'a> ConcreteObjectRef<'a> for &'a Map<String, Value> {
+impl ConcreteVariantObject for Map<String, Value> {
     type Value = Value;
 
     fn len(&self) -> usize {
-        (**self).len()
+        self.len()
     }
 
     fn get(&self, key: &str) -> Option<&Self::Value> {
-        (**self).get(key)
+        self.get(key)
     }
 
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
-        (**self).values()
+        self.values()
     }
 }

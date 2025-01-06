@@ -13,25 +13,25 @@
 // limitations under the License.
 
 pub trait VariantValue: Clone {
-    type ArrayRef<'a>: ConcreteArrayRef<'a, Value = Self>;
-    type ObjectRef<'a>: ConcreteObjectRef<'a, Value = Self>;
+    type VariantArray: ConcreteVariantArray<Value = Self>;
+    type VariantObject: ConcreteVariantObject<Value = Self>;
     fn is_array(&self) -> bool;
     fn is_object(&self) -> bool;
-    fn as_array(&self) -> Option<Self::ArrayRef>;
-    fn as_object(&self) -> Option<Self::ObjectRef>;
+    fn as_array(&self) -> Option<&Self::VariantArray>;
+    fn as_object(&self) -> Option<&Self::VariantObject>;
 
     fn make_array(iter: impl IntoIterator<Item = Self>) -> Self;
 }
 
-pub trait ConcreteArrayRef<'a> {
-    type Value: VariantValue<ArrayRef = Self>;
+pub trait ConcreteVariantArray {
+    type Value: VariantValue<VariantArray = Self>;
     fn len(&self) -> usize;
     fn get(&self, index: usize) -> Option<&Self::Value>;
     fn iter(&self) -> impl Iterator<Item = &Self::Value>;
 }
 
-pub trait ConcreteObjectRef<'a> {
-    type Value: VariantValue<ObjectRef = Self>;
+pub trait ConcreteVariantObject {
+    type Value: VariantValue<VariantObject = Self>;
     fn len(&self) -> usize;
     fn get(&self, key: &str) -> Option<&Self::Value>;
     fn values(&self) -> impl Iterator<Item = &Self::Value>;

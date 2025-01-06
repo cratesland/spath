@@ -23,7 +23,7 @@ use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
 use crate::VariantValue;
-use crate::{BindError, ConcreteArrayRef, ConcreteObjectRef};
+use crate::{BindError, ConcreteVariantArray, ConcreteVariantObject};
 
 /// A compiled SPath query.
 #[derive(Debug, Clone)]
@@ -109,7 +109,7 @@ impl EvalSegment {
                 let mut queue = vec![value];
                 while let Some(value) = queue.pop() {
                     for selector in selectors {
-                        if let Some(res) = selector.eval(root, value) {
+                        if let Some(res) = selector.eval(root, &value) {
                             result.push(res);
                         }
                     }
