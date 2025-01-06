@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub(crate) mod error;
-pub(crate) mod expr;
+pub(crate) mod ast;
+pub mod error;
 pub(crate) mod parse;
 pub(crate) mod range;
 pub(crate) mod runner;

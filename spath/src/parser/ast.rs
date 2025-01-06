@@ -12,13 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// A valid SPath expression.
-#[derive(Debug, Clone)]
-pub enum Expr {
-    /// Consists of a series of segments.
-    Segments { segments: Vec<Segment> },
-}
-
 #[derive(Debug, Clone)]
 pub enum Segment {
     /// §2.5.1 Child Segment.

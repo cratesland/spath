@@ -14,12 +14,11 @@
 
 use std::iter::Peekable;
 
-use crate::parser::error::ParseError;
-use crate::parser::expr::Expr;
-use crate::parser::expr::Segment;
-use crate::parser::expr::Selector;
+use crate::parser::ast::Segment;
+use crate::parser::ast::Selector;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
+use crate::ParseError;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -38,7 +37,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, ParseError> {
+    pub fn parse(&mut self) -> Result<Vec<Segment>, ParseError> {
         let first = self.next_token();
 
         // §2.2.1 (Root Identifier) Syntax
@@ -52,7 +51,7 @@ impl<'a> Parser<'a> {
         while let Some(segment) = self.parse_segment()? {
             segments.push(segment);
         }
-        Ok(Expr::Segments { segments })
+        Ok(segments)
     }
 
     fn parse_segment(&mut self) -> Result<Option<Segment>, ParseError> {

@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::error::ParseError;
-use crate::parser::expr::Expr;
+use crate::parser::ast::Segment;
 use crate::parser::parse::Parser;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
+use crate::ParseError;
 
 pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser(source: &str) -> Result<Expr, ParseError> {
+pub fn run_parser(source: &str) -> Result<Vec<Segment>, ParseError> {
     let tokens = run_tokenizer(source)?;
     Parser::new(source, tokens).parse()
-}
-
-#[test]
-fn test_run_parser() {
-    let expr = run_parser(r#"$[0,1,2,3,4]"#).unwrap();
-    println!("{expr:?}");
 }
