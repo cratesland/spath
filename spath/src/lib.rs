@@ -81,6 +81,8 @@
 //! - `json`: impl [`VariantValue`] for `serde_json::Value`.
 //! - `toml`: impl [`VariantValue`] for `toml::Value`.
 
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 mod value;
 pub use value::*;
 
