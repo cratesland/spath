@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use num_traits::ToPrimitive;
+
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
@@ -97,7 +99,7 @@ enum EvalSelector {
     /// §2.3.4 Array Slice Selector.
     Slice {
         /// The start index of the slice, inclusive. Default to 0.
-        start: i64,
+        start: Option<i64>,
         /// The end index of the slice, exclusive. Default to the length of the array.
         end: Option<i64>,
         /// The step to iterate the slice. Default to 1.
@@ -120,13 +122,29 @@ impl EvalSelector {
                 todo!("index selector: {index}")
             }
             EvalSelector::Slice { start, end, step } => {
-                todo!("slice selector: {start}, {end:?}, {step}")
+                todo!("slice selector: {start:?}, {end:?}, {step}")
             }
         }
     }
 }
 
-#[derive(Debug, Clone)]
+fn resolve_index(index: i64, len: usize) -> Option<usize> {
+    let index = if index >= 0 {
+        index.to_usize()?
+    } else {
+        let index = len as i64 + index;
+        index.to_usize()?
+    };
+
+    if index < len {
+        Some(index)
+    } else {
+        None
+    }
+}
+
+#[derive(Default, Debug, Clone)]
+#[non_exhaustive]
 pub struct Binder {}
 
 impl Binder {

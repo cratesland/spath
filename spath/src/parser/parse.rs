@@ -146,17 +146,17 @@ impl<'a> Parser<'a> {
             TokenKind::LiteralInteger => {
                 let index = parse_integer(token)?;
                 if self.consume_token(TokenKind::Colon).is_some() {
-                    self.parse_slice_selector(index)
+                    self.parse_slice_selector(Some(index))
                 } else {
                     Ok(Selector::Index { index })
                 }
             }
-            TokenKind::Colon => self.parse_slice_selector(0),
+            TokenKind::Colon => self.parse_slice_selector(None),
             _ => Err(ParseError::unexpected_token(token.span)),
         }
     }
 
-    fn parse_slice_selector(&mut self, start: i64) -> Result<Selector, ParseError> {
+    fn parse_slice_selector(&mut self, start: Option<i64>) -> Result<Selector, ParseError> {
         let token = self.next_token();
         let mut end = None;
         let mut step = 1;

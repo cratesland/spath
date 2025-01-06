@@ -502,6 +502,7 @@ dependencies = [
  "jiff",
  "logos",
  "num-cmp",
+ "num-traits",
  "ordered-float",
  "serde_json",
  "thiserror",
