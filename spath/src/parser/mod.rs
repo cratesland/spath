@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[derive(Debug, thiserror::Error)]
-#[error("{0}")]
-pub struct BindError(pub String);
-
-#[derive(Debug, thiserror::Error)]
-#[error("{0}")]
-pub struct EvalError(pub String);
+pub(crate) mod ast;
+pub(crate) mod error;
+pub(crate) mod parse;
+pub(crate) mod range;
+pub(crate) mod runner;
+pub(crate) mod token;

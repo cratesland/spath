@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use insta::assert_debug_snapshot;
+use crate::parser::ast::Segment;
+use crate::parser::error::ParseError;
+use crate::parser::parse::Parser;
+use crate::parser::token::Token;
+use crate::parser::token::Tokenizer;
 
-use crate::Value;
+pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
+    Tokenizer::new(source).collect::<Result<_, _>>()
+}
 
-#[cfg(feature = "json")]
-#[test]
-fn test_serde_json_to_variant() {
-    let value: serde_json::Value = serde_json::from_str(include_str!("simple.json")).unwrap();
-    let value = Value::from(value);
-    assert_debug_snapshot!(value);
+pub fn run_parser(source: &str) -> Result<Vec<Segment>, ParseError> {
+    let tokens = run_tokenizer(source)?;
+    Parser::new(source, tokens).parse()
 }

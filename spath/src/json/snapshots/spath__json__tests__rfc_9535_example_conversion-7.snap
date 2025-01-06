@@ -1,6 +1,6 @@
 ---
-source: spath/src/tests/mod.rs
-expression: value
+source: spath/src/json/tests.rs
+expression: "assert_testdata_identical(\"rfc-9535-example-7.json\")"
 snapshot_kind: text
 ---
 {"a":[3,5,1,2,4,6,{"b":'j'},{"b":'k'},{"b":{}},{"b":'kilo'}],"e":'f',"o":{"p":1,"q":2,"r":3,"s":5,"t":{"u":6}}}
