@@ -30,13 +30,14 @@ repository.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["json"]
+default = []
 json = ["dep:serde_json"]
 
 [dependencies]
 jiff = { version = "0.1.21" }
 logos = { version = "0.15.0" }
 num-cmp = { version = "0.1.0" }
+num-traits = { version = "0.2.19" }
 ordered-float = { version = "4.6.0", features = ["num-cmp"] }
 thiserror = { version = "2.0.8" }
 

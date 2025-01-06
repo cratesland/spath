@@ -13,6 +13,11 @@
 // limitations under the License.
 
 #[derive(Debug, Clone)]
+pub struct RootPathQuery {
+    pub segments: Vec<Segment>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Segment {
     /// §2.5.1 Child Segment.
     Child {
@@ -41,10 +46,17 @@ pub enum Selector {
         index: i64,
     },
     /// §2.3.4 Array Slice Selector.
+    ///
+    /// Default Array Slice start and end Values:
+    ///
+    /// | Condition | start     | end     |
+    /// |-----------|-----------|---------|
+    /// | step >= 0 | 0         | len     |
+    /// | step < 0  | len - 1   | -len - 1|
     Slice {
-        /// The start index of the slice, inclusive. Default to 0.
-        start: i64,
-        /// The end index of the slice, exclusive. Default to the length of the array.
+        /// The start index of the slice, inclusive.
+        start: Option<i64>,
+        /// The end index of the slice, exclusive.
         end: Option<i64>,
         /// The step to iterate the slice. Default to 1.
         step: i64,

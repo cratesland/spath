@@ -14,6 +14,7 @@
 
 use std::iter::Peekable;
 
+use crate::parser::ast::RootPathQuery;
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::error::ParseError;
@@ -37,7 +38,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Segment>, ParseError> {
+    pub fn parse(&mut self) -> Result<RootPathQuery, ParseError> {
         let first = self.next_token();
 
         // §2.2.1 (Root Identifier) Syntax
@@ -47,11 +48,15 @@ impl<'a> Parser<'a> {
             _ => return Err(ParseError::unexpected_token(first.span)),
         }
 
+        self.parse_root_path_query()
+    }
+
+    fn parse_root_path_query(&mut self) -> Result<RootPathQuery, ParseError> {
         let mut segments = vec![];
         while let Some(segment) = self.parse_segment()? {
             segments.push(segment);
         }
-        Ok(segments)
+        Ok(RootPathQuery { segments })
     }
 
     fn parse_segment(&mut self) -> Result<Option<Segment>, ParseError> {
@@ -69,6 +74,12 @@ impl<'a> Parser<'a> {
                         selectors: vec![Selector::Wildcard],
                     })),
                     TokenKind::Ident => {
+                        let name = token.text().to_string();
+                        Ok(Some(Segment::Child {
+                            selectors: vec![Selector::Identifier { name }],
+                        }))
+                    }
+                    TokenKind::NULL => {
                         let name = token.text().to_string();
                         Ok(Some(Segment::Child {
                             selectors: vec![Selector::Identifier { name }],
@@ -146,17 +157,17 @@ impl<'a> Parser<'a> {
             TokenKind::LiteralInteger => {
                 let index = parse_integer(token)?;
                 if self.consume_token(TokenKind::Colon).is_some() {
-                    self.parse_slice_selector(index)
+                    self.parse_slice_selector(Some(index))
                 } else {
                     Ok(Selector::Index { index })
                 }
             }
-            TokenKind::Colon => self.parse_slice_selector(0),
+            TokenKind::Colon => self.parse_slice_selector(None),
             _ => Err(ParseError::unexpected_token(token.span)),
         }
     }
 
-    fn parse_slice_selector(&mut self, start: i64) -> Result<Selector, ParseError> {
+    fn parse_slice_selector(&mut self, start: Option<i64>) -> Result<Selector, ParseError> {
         let token = self.next_token();
         let mut end = None;
         let mut step = 1;
@@ -175,6 +186,10 @@ impl<'a> Parser<'a> {
                         step = parse_integer(token)?;
                     } // else - start:end:
                 } // else - start:end
+            }
+            TokenKind::RBracket => {
+                // start:
+                self.index -= 1; // backtrace
             }
             _ => return Err(ParseError::unexpected_token(token.span)),
         }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::ast::Segment;
+use crate::parser::ast::RootPathQuery;
 use crate::parser::error::ParseError;
 use crate::parser::parse::Parser;
 use crate::parser::token::Token;
@@ -22,7 +22,7 @@ pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser(source: &str) -> Result<Vec<Segment>, ParseError> {
+pub fn run_parser(source: &str) -> Result<RootPathQuery, ParseError> {
     let tokens = run_tokenizer(source)?;
     Parser::new(source, tokens).parse()
 }
