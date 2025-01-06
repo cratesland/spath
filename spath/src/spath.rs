@@ -46,10 +46,7 @@ impl SPath {
 
         let mut result = self.segments[0].eval(root, root)?;
         for segment in &self.segments[1..] {
-            result = match segment.eval(root, &result) {
-                Some(res) => res,
-                None => return None,
-            };
+            result = segment.eval(root, &result)?;
         }
         Some(result)
     }
@@ -109,7 +106,7 @@ impl EvalSegment {
                 let mut queue = vec![value];
                 while let Some(value) = queue.pop() {
                     for selector in selectors {
-                        if let Some(res) = selector.eval(root, &value) {
+                        if let Some(res) = selector.eval(root, value) {
                             result.push(res);
                         }
                     }
@@ -172,11 +169,7 @@ impl EvalSelector {
                 // The wildcard selector selects nothing from a primitive JSON value.
                 if let Some(vec) = value.as_array() {
                     Some(T::make_array(vec.iter().cloned()))
-                } else if let Some(map) = value.as_object() {
-                    Some(T::make_array(map.values().cloned()))
-                } else {
-                    None
-                }
+                } else { value.as_object().map(|map| T::make_array(map.values().cloned())) }
             }
             EvalSelector::Identifier { name } => {
                 if let Some(map) = value.as_object() {
