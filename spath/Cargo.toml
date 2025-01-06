@@ -34,7 +34,6 @@ default = []
 json = ["dep:serde_json"]
 preserve_order = ["dep:indexmap"]
 serde = ["dep:serde", "indexmap?/serde", "jiff/serde"]
-toml = ["dep:toml"]
 
 [dependencies]
 jiff = { version = "0.1.21" }
@@ -48,7 +47,6 @@ thiserror = { version = "2.0.8" }
 indexmap = { version = "2.7.0", optional = true }
 serde = { version = "1.0.216", features = ["derive"], optional = true }
 serde_json = { version = "1.0.133", optional = true }
-toml = { version = "0.8.19", optional = true }
 
 [dev-dependencies]
 googletest = { version = "0.13.0" }
