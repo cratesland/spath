@@ -43,7 +43,7 @@ serde_json = { version = "1.0.133", optional = true }
 
 [dev-dependencies]
 googletest = { version = "0.13.0" }
-insta = { version = "1.41.1" }
+insta = { version = "1.41.1", features = ["json"] }
 serde_json = { version = "1.0.133" }
 
 [lints]
