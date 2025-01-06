@@ -26,7 +26,7 @@
 //! # #[cfg(feature = "json")]
 //! # {
 //! use serde_json::json;
-//! use serde_json::Value as JsonValue;
+//! use serde_json::Value;
 //! use spath::SPath;
 //! use spath::VariantValue;
 //!
@@ -40,9 +40,8 @@
 //! });
 //!
 //! let spath = SPath::new("$.phones[1]").unwrap();
-//! let value = VariantValue::from(data);
-//! let result = spath.eval(&value).unwrap();
-//! assert_eq!(JsonValue::from(result), json!("+44 2345678"));
+//! let result = spath.eval(&data).unwrap();
+//! assert_eq!(result, json!("+44 2345678"));
 //! # }
 //! ```
 //!
