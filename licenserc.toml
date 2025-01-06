@@ -14,6 +14,9 @@
 
 headerPath = "Apache-2.0.txt"
 
+excludes = [
+  'spath/src/value/map.rs', # copied from serde_json
+]
 includes = ['**/*.proto', '**/*.rs', '**/*.yml', '**/*.yaml', '**/*.toml']
 
 [properties]

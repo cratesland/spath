@@ -12,78 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::BTreeMap;
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
 use num_cmp::NumCmp;
-
-/// An ordered floating point number. Provided by the [`ordered-float`] crate.
-pub type F64 = ordered_float::OrderedFloat<f64>;
-
-/// The type of array of values.
-pub type Array = Vec<Value>;
-
-/// The type of object values.
-pub type Object = BTreeMap<String, Value>;
-
-/// A variant value.
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub enum Value {
-    Null,
-    Bool(bool),
-    Number(Number),
-    String(String),
-    Timestamp(jiff::Timestamp),
-    Interval(jiff::SignedDuration),
-    Binary(Vec<u8>),
-    Array(Array),
-    Object(Object),
-}
-
-impl fmt::Debug for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Value::Null => write!(f, "null"),
-            Value::Bool(b) => write!(f, "{b}"),
-            Value::Number(n) => write!(f, "{n:?}"),
-            Value::String(s) => write!(f, "'{s}'"),
-            Value::Timestamp(t) => write!(f, "{t:.6}"),
-            Value::Interval(i) => write!(f, "{i}"),
-            Value::Binary(b) => write!(f, "{b:?}"),
-            Value::Array(a) => {
-                write!(f, "[")?;
-                for (i, v) in a.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ",")?;
-                    }
-                    write!(f, "{:?}", v)?;
-                }
-                write!(f, "]")?;
-                Ok(())
-            }
-            Value::Object(o) => {
-                write!(f, "{{")?;
-                for (i, (k, v)) in o.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ",")?;
-                    }
-                    write!(f, "{:?}:{:?}", k, v)?;
-                }
-                write!(f, "}}")?;
-                Ok(())
-            }
-        }
-    }
-}
+use ordered_float::OrderedFloat;
 
 /// A variant number value.
 #[derive(Copy, Clone)]
 pub enum Number {
     I64(i64),
     U64(u64),
-    F64(F64),
+    F64(OrderedFloat<f64>),
 }
 
 impl From<i64> for Number {
@@ -100,7 +41,7 @@ impl From<u64> for Number {
 
 impl From<f64> for Number {
     fn from(n: f64) -> Self {
-        Number::F64(F64::from(n))
+        Number::F64(n.into())
     }
 }
 
