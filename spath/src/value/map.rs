@@ -30,22 +30,33 @@ use indexmap::IndexMap;
 use crate::Value;
 
 /// Represents a JSON key/value type.
-pub struct Map<K, V> {
-    map: MapImpl<K, V>,
+pub struct Map {
+    map: MapImpl,
 }
 
 #[cfg(not(feature = "preserve_order"))]
-type MapImpl<K, V> = btree_map::BTreeMap<K, V>;
+type MapImpl = btree_map::BTreeMap<String, Value>;
 #[cfg(feature = "preserve_order")]
-type MapImpl<K, V> = IndexMap<K, V>;
+type MapImpl = IndexMap<String, Value>;
 
-impl Map<String, Value> {
+impl From<MapImpl> for Map {
+    fn from(map: MapImpl) -> Self {
+        Map { map }
+    }
+}
+
+impl Map {
     /// Makes a new empty Map.
     #[inline]
     pub fn new() -> Self {
         Map {
             map: MapImpl::new(),
         }
+    }
+
+    /// Consumes the `Map`, returning the underlying Map implementation.
+    pub fn into_inner(self) -> MapImpl {
+        self.map
     }
 
     /// Makes a new empty Map with the given initial capacity.
@@ -394,8 +405,7 @@ impl Map<String, Value> {
     }
 }
 
-#[allow(clippy::derivable_impls)] // clippy bug: https://github.com/rust-lang/rust-clippy/issues/7655
-impl Default for Map<String, Value> {
+impl Default for Map {
     #[inline]
     fn default() -> Self {
         Map {
@@ -404,7 +414,7 @@ impl Default for Map<String, Value> {
     }
 }
 
-impl Clone for Map<String, Value> {
+impl Clone for Map {
     #[inline]
     fn clone(&self) -> Self {
         Map {
@@ -418,23 +428,23 @@ impl Clone for Map<String, Value> {
     }
 }
 
-impl PartialEq for Map<String, Value> {
+impl PartialEq for Map {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.map.eq(&other.map)
     }
 }
 
-impl Eq for Map<String, Value> {}
+impl Eq for Map {}
 
-impl PartialOrd for Map<String, Value> {
+impl PartialOrd for Map {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Map<String, Value> {
+impl Ord for Map {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         #[cfg(not(feature = "preserve_order"))]
@@ -449,7 +459,7 @@ impl Ord for Map<String, Value> {
     }
 }
 
-impl Hash for Map<String, Value> {
+impl Hash for Map {
     fn hash<H: Hasher>(&self, state: &mut H) {
         #[cfg(not(feature = "preserve_order"))]
         {
@@ -481,7 +491,7 @@ impl Hash for Map<String, Value> {
 /// }
 /// # ;
 /// ```
-impl<Q> ops::Index<&Q> for Map<String, Value>
+impl<Q> ops::Index<&Q> for Map
 where
     String: Borrow<Q>,
     Q: ?Sized + Ord + Eq + Hash,
@@ -504,7 +514,7 @@ where
 /// #
 /// map["key"] = json!("value");
 /// ```
-impl<Q> ops::IndexMut<&Q> for Map<String, Value>
+impl<Q> ops::IndexMut<&Q> for Map
 where
     String: Borrow<Q>,
     Q: ?Sized + Ord + Eq + Hash,
@@ -514,7 +524,7 @@ where
     }
 }
 
-impl fmt::Debug for Map<String, Value> {
+impl fmt::Debug for Map {
     #[inline]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         self.map.fmt(formatter)
@@ -522,7 +532,7 @@ impl fmt::Debug for Map<String, Value> {
 }
 
 #[cfg(feature = "serde")]
-impl serde::ser::Serialize for Map<String, Value> {
+impl serde::ser::Serialize for Map {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -540,7 +550,7 @@ impl serde::ser::Serialize for Map<String, Value> {
 // TODO(tisonkun): Blocked by https://github.com/cratesland/spath/issues/9.
 //
 // #[cfg(feature = "serde")]
-// impl<'de> serde::de::Deserialize<'de> for Map<String, Value> {
+// impl<'de> serde::de::Deserialize<'de> for Map {
 //     #[inline]
 //     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 //     where
@@ -549,7 +559,7 @@ impl serde::ser::Serialize for Map<String, Value> {
 //         struct Visitor;
 //
 //         impl<'de> serde::de::Visitor<'de> for Visitor {
-//             type Value = Map<String, Value>;
+//             type Value = Map;
 //
 //             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
 //                 formatter.write_str("a map")
@@ -582,7 +592,7 @@ impl serde::ser::Serialize for Map<String, Value> {
 //     }
 // }
 
-impl FromIterator<(String, Value)> for Map<String, Value> {
+impl FromIterator<(String, Value)> for Map {
     fn from_iter<T>(iter: T) -> Self
     where
         T: IntoIterator<Item = (String, Value)>,
@@ -593,7 +603,7 @@ impl FromIterator<(String, Value)> for Map<String, Value> {
     }
 }
 
-impl Extend<(String, Value)> for Map<String, Value> {
+impl Extend<(String, Value)> for Map {
     fn extend<T>(&mut self, iter: T)
     where
         T: IntoIterator<Item = (String, Value)>,
@@ -1077,7 +1087,7 @@ impl<'a> OccupiedEntry<'a> {
 
 //////////////////////////////////////////////////////////////////////////////
 
-impl<'a> IntoIterator for &'a Map<String, Value> {
+impl<'a> IntoIterator for &'a Map {
     type Item = (&'a String, &'a Value);
     type IntoIter = Iter<'a>;
     #[inline]
@@ -1102,7 +1112,7 @@ delegate_iterator!((Iter<'a>) => (&'a String, &'a Value));
 
 //////////////////////////////////////////////////////////////////////////////
 
-impl<'a> IntoIterator for &'a mut Map<String, Value> {
+impl<'a> IntoIterator for &'a mut Map {
     type Item = (&'a String, &'a mut Value);
     type IntoIter = IterMut<'a>;
     #[inline]
@@ -1127,7 +1137,7 @@ delegate_iterator!((IterMut<'a>) => (&'a String, &'a mut Value));
 
 //////////////////////////////////////////////////////////////////////////////
 
-impl IntoIterator for Map<String, Value> {
+impl IntoIterator for Map {
     type Item = (String, Value);
     type IntoIter = IntoIter;
     #[inline]

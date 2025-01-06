@@ -28,7 +28,7 @@ pub enum Value {
     Interval(jiff::SignedDuration),
     Binary(Vec<u8>),
     Array(Vec<Value>),
-    Object(Map<String, Value>),
+    Object(Map),
 }
 
 impl fmt::Debug for Value {
