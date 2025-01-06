@@ -26,4 +26,7 @@ mod json;
 mod parser;
 
 #[cfg(test)]
-mod tests;
+fn manifest_dir() -> std::path::PathBuf {
+    let dir = env!("CARGO_MANIFEST_DIR");
+    std::path::PathBuf::from(dir).canonicalize().unwrap()
+}
