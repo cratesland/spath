@@ -19,16 +19,20 @@ pub trait VariantValue: Clone {
     fn is_object(&self) -> bool;
     fn as_array(&self) -> Option<Self::ArrayRef>;
     fn as_object(&self) -> Option<Self::ObjectRef>;
+
+    fn make_array(iter: impl IntoIterator<Item = Self>) -> Self;
 }
 
 pub trait ConcreteArrayRef<'a> {
     type Value: VariantValue<ArrayRef = Self>;
     fn len(&self) -> usize;
     fn get(&self, index: usize) -> Option<&Self::Value>;
+    fn iter(&self) -> impl Iterator<Item = &Self::Value>;
 }
 
 pub trait ConcreteObjectRef<'a> {
     type Value: VariantValue<ObjectRef = Self>;
     fn len(&self) -> usize;
     fn get(&self, key: &str) -> Option<&Self::Value>;
+    fn values(&self) -> impl Iterator<Item = &Self::Value>;
 }

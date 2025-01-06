@@ -434,6 +434,7 @@ dependencies = [
  "googletest",
  "insta",
  "logos",
+ "num-traits",
  "serde_json",
  "thiserror",
 ]

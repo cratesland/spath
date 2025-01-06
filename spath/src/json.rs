@@ -20,6 +20,10 @@ impl VariantValue for Value {
     fn as_object(&self) -> Option<Self::ObjectRef> {
         self.as_object()
     }
+
+    fn make_array(iter: impl IntoIterator<Item = Self>) -> Self {
+        Value::Array(iter.into_iter().collect())
+    }
 }
 
 impl<'a> ConcreteArrayRef<'a> for &'a Vec<Value> {
@@ -32,6 +36,10 @@ impl<'a> ConcreteArrayRef<'a> for &'a Vec<Value> {
     fn get(&self, index: usize) -> Option<&Self::Value> {
         (**self).get(index)
     }
+
+    fn iter(&self) -> impl Iterator<Item = &Self::Value> {
+        (**self).iter()
+    }
 }
 
 impl<'a> ConcreteObjectRef<'a> for &'a Map<String, Value> {
@@ -43,5 +51,9 @@ impl<'a> ConcreteObjectRef<'a> for &'a Map<String, Value> {
 
     fn get(&self, key: &str) -> Option<&Self::Value> {
         (**self).get(key)
+    }
+
+    fn values(&self) -> impl Iterator<Item = &Self::Value> {
+        (**self).values()
     }
 }
