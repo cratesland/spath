@@ -59,17 +59,14 @@ impl CommandBuild {
 struct CommandTest {
     #[arg(long, help = "Run tests serially and do not capture output.")]
     no_capture: bool,
-    #[arg(long, help = "Activate all available features.")]
-    all_features: bool,
 }
 
 impl CommandTest {
     fn run(self) {
-        if self.all_features {
-            run_command(make_test_cmd(self.no_capture, true, true, &[]));
-        } else {
-            run_command(make_test_cmd(self.no_capture, true, false, &[]));
-        }
+        run_command(make_test_cmd(self.no_capture, true, true, &[]));
+        run_command(make_test_cmd(self.no_capture, true, false, &[]));
+        run_command(make_test_cmd(self.no_capture, true, false, &["json"]));
+        run_command(make_test_cmd(self.no_capture, true, false, &["toml"]));
     }
 }
 
