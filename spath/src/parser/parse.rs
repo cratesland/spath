@@ -72,7 +72,10 @@ impl<'a> Parser<'a> {
         loop {
             let token = self.peek_token();
             match token.kind {
-                TokenKind::EOI | TokenKind::RBracket => {
+                TokenKind::EOI => {
+                    return Err(ParseError::new(token.span, "unclosed bracket"));
+                }
+                TokenKind::RBracket => {
                     let _consumed = self.next_token();
                     return Ok(selectors);
                 }
@@ -105,11 +108,49 @@ impl<'a> Parser<'a> {
                 Ok(Selector::Identifier { name })
             }
             TokenKind::LiteralInteger => {
-                // TODO(tisonkun): dispatch slice-selector
                 let index = parse_integer(token)?;
-                Ok(Selector::Index { index })
+                if self.consume_token(TokenKind::Colon).is_some() {
+                    self.parse_slice_selector(index)
+                } else {
+                    Ok(Selector::Index { index })
+                }
             }
+            TokenKind::Colon => self.parse_slice_selector(0),
             _ => Err(ParseError::unexpected_token(token.span)),
+        }
+    }
+
+    fn parse_slice_selector(&mut self, start: i64) -> Result<Selector, ParseError> {
+        let token = self.next_token();
+        let mut end = None;
+        let mut step = 1;
+        match token.kind {
+            TokenKind::Colon => {
+                if let Some(token) = self.consume_token(TokenKind::LiteralInteger) {
+                    // start::step
+                    step = parse_integer(token)?;
+                } // else - start::
+            }
+            TokenKind::LiteralInteger => {
+                end = Some(parse_integer(token)?);
+                if self.consume_token(TokenKind::Colon).is_some() {
+                    if let Some(token) = self.consume_token(TokenKind::LiteralInteger) {
+                        // start:end:step
+                        step = parse_integer(token)?;
+                    } // else - start:end:
+                } // else - start:end
+            }
+            _ => return Err(ParseError::unexpected_token(token.span)),
+        }
+        Ok(Selector::Slice { start, end, step })
+    }
+
+    fn consume_token(&mut self, kind: TokenKind) -> Option<Token> {
+        let token = self.peek_token();
+        if token.kind == kind {
+            Some(self.next_token())
+        } else {
+            None
         }
     }
 

@@ -50,10 +50,10 @@ pub enum Selector {
     /// §2.3.4 Array Slice Selector.
     Slice {
         /// The start index of the slice, inclusive. Default to 0.
-        start: Option<i64>,
+        start: i64,
         /// The end index of the slice, exclusive. Default to the length of the array.
         end: Option<i64>,
         /// The step to iterate the slice. Default to 1.
-        step: Option<i64>,
+        step: i64,
     },
 }
