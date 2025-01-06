@@ -16,9 +16,9 @@ use std::iter::Peekable;
 
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
+use crate::parser::error::ParseError;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
-use crate::parser::error::ParseError;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -70,7 +70,7 @@ impl<'a> Parser<'a> {
                     })),
                     TokenKind::Ident => {
                         let name = token.text().to_string();
-                        Ok(Some(Segment::Descendant {
+                        Ok(Some(Segment::Child {
                             selectors: vec![Selector::Identifier { name }],
                         }))
                     }

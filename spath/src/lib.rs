@@ -26,7 +26,17 @@ mod json;
 mod parser;
 
 #[cfg(test)]
+mod tests;
+
+#[cfg(test)]
 fn manifest_dir() -> std::path::PathBuf {
     let dir = env!("CARGO_MANIFEST_DIR");
     std::path::PathBuf::from(dir).canonicalize().unwrap()
+}
+
+#[cfg(test)]
+fn json_testdata(filename: &str) -> serde_json::Value {
+    let path = manifest_dir().join("testdata").join(filename);
+    let content = std::fs::read_to_string(path).unwrap();
+    serde_json::from_str(&content).unwrap()
 }

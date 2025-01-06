@@ -17,17 +17,13 @@ use googletest::matchers::eq;
 use insta::assert_snapshot;
 use serde_json::Value as JsonValue;
 
-use crate::manifest_dir;
+use crate::json_testdata;
 use crate::Value;
 
 fn assert_testdata_identical(path: &str) -> String {
-    let path = manifest_dir().join("testdata").join(path);
-    let literal = std::fs::read_to_string(&path).unwrap();
-
-    let json_value = serde_json::from_str::<JsonValue>(&literal).unwrap();
+    let json_value = json_testdata(path);
     let value = Value::from(json_value.clone());
     assert_that!(json_value, eq(&JsonValue::from(value.clone())));
-
     format!("{:?}", value)
 }
 

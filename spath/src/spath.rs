@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::ast::{Segment, Selector};
+use crate::parser::ast::Segment;
+use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
-use crate::{BindError, Value};
+use crate::BindError;
+use crate::Value;
 
 #[derive(Debug, Clone)]
 pub struct SPath {
@@ -28,15 +30,16 @@ impl SPath {
         Ok(binder.bind(segments))
     }
 
-    pub fn eval(&self, value: Value) -> Option<Value> {
-        let mut root = value;
-        for segment in self.segments {
-            if let Some(result) = self.eval_segment(segment, result, result) {
-                result
+    pub fn eval(&self, root: &Value) -> Option<Value> {
+        let mut result = root.clone();
+        for segment in &self.segments {
+            if let Some(res) = segment.eval(root, result) {
+                result = res;
             } else {
                 return None;
             }
         }
+        Some(result.clone())
     }
 }
 
@@ -52,6 +55,29 @@ enum EvalSegment {
         /// The selectors of the descendant segment.
         selectors: Vec<EvalSelector>,
     },
+}
+
+impl EvalSegment {
+    fn eval(&self, root: &Value, value: Value) -> Option<Value> {
+        match self {
+            EvalSegment::Child { selectors } => {
+                let mut result = value;
+                for selector in selectors {
+                    if let Some(res) = selector.eval(root, result) {
+                        result = res;
+                    } else {
+                        return None;
+                    }
+                }
+                Some(result)
+            }
+            EvalSegment::Descendant {
+                selectors: _selectors,
+            } => {
+                todo!("descendant segment")
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +103,27 @@ enum EvalSelector {
         /// The step to iterate the slice. Default to 1.
         step: i64,
     },
+}
+
+impl EvalSelector {
+    fn eval(&self, _root: &Value, value: Value) -> Option<Value> {
+        match self {
+            EvalSelector::Wildcard => Some(value),
+            EvalSelector::Identifier { name } => {
+                if let Value::Object(map) = value {
+                    map.get(name).cloned()
+                } else {
+                    None
+                }
+            }
+            EvalSelector::Index { index } => {
+                todo!("index selector: {index}")
+            }
+            EvalSelector::Slice { start, end, step } => {
+                todo!("slice selector: {start}, {end:?}, {step}")
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -109,7 +156,7 @@ impl Binder {
         match selector {
             Selector::Wildcard => EvalSelector::Wildcard,
             Selector::Identifier { name } => EvalSelector::Identifier { name },
-            Selector::Index { index } => EvalSelector::Index { index: *index },
+            Selector::Index { index } => EvalSelector::Index { index },
             Selector::Slice { start, end, step } => EvalSelector::Slice { start, end, step },
         }
     }
