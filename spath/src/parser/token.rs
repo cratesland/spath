@@ -20,7 +20,7 @@ use logos::Logos;
 use crate::parser::error::ParseError;
 use crate::parser::range::Range;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Token<'a> {
     pub source: &'a str,
     pub kind: TokenKind,

@@ -17,15 +17,21 @@ use crate::parser::range::Range;
 #[derive(Debug, thiserror::Error)]
 #[error("{message}")]
 pub struct ParseError {
-    span: Range,
+    range: Range,
     message: String,
 }
 
 impl ParseError {
-    pub fn new(span: Range, message: impl Into<String>) -> Self {
-        Self {
-            span,
-            message: message.into(),
-        }
+    pub fn new(range: Range, message: impl Into<String>) -> Self {
+        let message = message.into();
+        Self { range, message }
+    }
+
+    pub fn empty() -> Self {
+        Self::new(Range { start: 0, end: 0 }, "empty input")
+    }
+
+    pub fn unexpected_token(range: Range) -> Self {
+        Self::new(range, "unexpected token")
     }
 }
