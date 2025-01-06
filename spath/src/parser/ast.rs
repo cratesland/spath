@@ -24,19 +24,19 @@ pub enum Segment {
     /// §2.5.1 Child Segment.
     Child {
         /// The selectors of the child segment.
-        selector: Vec<Selector>,
+        selectors: Vec<Selector>,
     },
     /// §2.5.2 Descendant Segment.
     Descendant {
         /// The selectors of the descendant segment.
-        selector: Vec<Selector>,
+        selectors: Vec<Selector>,
     },
 }
 
 #[derive(Debug, Clone)]
 pub enum Selector {
     /// §2.3.2 Wildcard Selector.
-    Asterisk,
+    Wildcard,
     /// §2.3.1 Name Selector.
     Identifier {
         /// The name of the selector.

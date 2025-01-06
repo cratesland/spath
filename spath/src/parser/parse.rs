@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::ast::Expr;
 use crate::parser::ast::Segment;
+use crate::parser::ast::{Expr, Selector};
 use crate::parser::error::ParseError;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
@@ -38,6 +38,7 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> Result<Expr, ParseError> {
         let first = self.next_token();
 
+        // §2.2.1 (Root Identifier) Syntax
         match first.kind {
             TokenKind::Dollar => {} // the first token must be '$'
             TokenKind::EOI => return Err(ParseError::empty()),
@@ -51,11 +52,75 @@ impl<'a> Parser<'a> {
         Ok(Expr::Segments { segments })
     }
 
-    pub fn parse_segment(&mut self) -> Result<Option<Segment>, ParseError> {
+    fn parse_segment(&mut self) -> Result<Option<Segment>, ParseError> {
         let token = self.next_token();
         match token.kind {
             TokenKind::EOI => Ok(None),
+            TokenKind::LBracket => {
+                let selectors = self.parse_bracketed_selector()?;
+                Ok(Some(Segment::Child { selectors }))
+            }
+            // TODO(tisonkun): handle ..(descendant segment), .identifier, and .*
             _ => Err(ParseError::unexpected_token(token.span)),
+        }
+    }
+
+    fn parse_bracketed_selector(&mut self) -> Result<Vec<Selector>, ParseError> {
+        let mut selectors = vec![];
+        let mut prev_comma = false;
+        loop {
+            let token = self.peek_token();
+            match token.kind {
+                TokenKind::EOI | TokenKind::RBracket => {
+                    let _consumed = self.next_token();
+                    return Ok(selectors);
+                }
+                TokenKind::Comma => {
+                    if prev_comma || selectors.is_empty() {
+                        return Err(ParseError::unexpected_token(token.span));
+                    }
+                    prev_comma = true;
+                    let _consumed = self.next_token();
+                }
+                _ => {
+                    if prev_comma || selectors.is_empty() {
+                        prev_comma = false;
+                        let selector = self.parse_selector()?;
+                        selectors.push(selector);
+                    } else {
+                        return Err(ParseError::unexpected_token(token.span));
+                    }
+                }
+            }
+        }
+    }
+
+    fn parse_selector(&mut self) -> Result<Selector, ParseError> {
+        let token = self.next_token();
+        match token.kind {
+            TokenKind::Asterisk => Ok(Selector::Wildcard),
+            TokenKind::LiteralString => {
+                // TODO(tisonkun): unescape the string
+                let text = token.text();
+                Ok(Selector::Identifier {
+                    name: text.to_string(),
+                })
+            }
+            TokenKind::LiteralInteger => {
+                // TODO(tisonkun): dispatch slice-selector
+                let text = token.text();
+                let index = text.parse().unwrap();
+                Ok(Selector::Index { index })
+            }
+            _ => Err(ParseError::unexpected_token(token.span)),
+        }
+    }
+
+    fn peek_token(&self) -> Token {
+        if self.index < self.tokens.len() {
+            self.tokens[self.index]
+        } else {
+            Token::new_eoi(self.source)
         }
     }
 
