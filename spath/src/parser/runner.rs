@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::ast::Expr;
 use crate::parser::error::ParseError;
+use crate::parser::expr::Expr;
 use crate::parser::parse::Parser;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;

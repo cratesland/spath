@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::ast::Segment;
-use crate::parser::ast::{Expr, Selector};
+use std::iter::Peekable;
+
 use crate::parser::error::ParseError;
+use crate::parser::expr::Expr;
+use crate::parser::expr::Segment;
+use crate::parser::expr::Selector;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
-use std::iter::Peekable;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -86,16 +88,16 @@ impl<'a> Parser<'a> {
         match token.kind {
             TokenKind::LBracket => {
                 let selectors = self.parse_bracketed_selector()?;
-                Ok((Segment::Descendant { selectors }))
+                Ok(Segment::Descendant { selectors })
             }
-            TokenKind::Asterisk => Ok((Segment::Descendant {
+            TokenKind::Asterisk => Ok(Segment::Descendant {
                 selectors: vec![Selector::Wildcard],
-            })),
+            }),
             TokenKind::Ident => {
                 let name = token.text().to_string();
-                Ok((Segment::Descendant {
+                Ok(Segment::Descendant {
                     selectors: vec![Selector::Identifier { name }],
-                }))
+                })
             }
             _ => Err(ParseError::unexpected_token(token.span)),
         }
@@ -219,7 +221,7 @@ fn parse_string(token: Token) -> Result<String, ParseError> {
     let mut chars = text.chars();
 
     let quote = chars.next().expect("quote char always exist");
-    if chars.next_back().map_or(true, |ch| ch != quote) {
+    if chars.next_back() != Some(quote) {
         return Err(ParseError::new(token.span, "mismatched quote"));
     }
 
