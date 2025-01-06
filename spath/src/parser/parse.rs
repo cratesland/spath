@@ -176,6 +176,10 @@ impl<'a> Parser<'a> {
                     } // else - start:end:
                 } // else - start:end
             }
+            TokenKind::RBracket => {
+                // start:
+                self.index -= 1; // backtrace
+            }
             _ => return Err(ParseError::unexpected_token(token.span)),
         }
         Ok(Selector::Slice { start, end, step })

@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use logos::Source;
+use std::cmp::max;
+use std::cmp::min;
+use std::cmp::Ordering;
+
 use num_traits::ToPrimitive;
-use std::cmp::{max, min};
 
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
@@ -163,19 +165,25 @@ impl EvalSelector {
 
                     let (lower, upper) = bounds(start, end, step, len);
                     let mut selected = vec![];
-                    if step > 0 {
-                        let mut i = lower;
-                        while i < upper {
-                            selected.push(vec[i as usize].clone());
-                            i = i + step;
+                    match step.cmp(&0) {
+                        Ordering::Greater => {
+                            // step > 0
+                            let mut i = lower;
+                            while i < upper {
+                                selected.push(vec[i as usize].clone());
+                                i += step;
+                            }
                         }
-                    } else if step < 0 {
-                        let mut i = upper;
-                        while lower < i {
-                            selected.push(vec[i as usize].clone());
-                            i = i + step;
+                        Ordering::Less => {
+                            // step < 0
+                            let mut i = upper;
+                            while lower < i {
+                                selected.push(vec[i as usize].clone());
+                                i += step;
+                            }
                         }
-                    } // else assert_ne!(step, 0);
+                        Ordering::Equal => unreachable!("step is guaranteed not zero here"),
+                    }
                     Some(Value::Array(selected))
                 } else {
                     None
@@ -219,8 +227,8 @@ fn bounds(start: i64, end: i64, step: i64, len: i64) -> (i64, i64) {
         let upper = min(max(end, 0), len);
         (lower, upper)
     } else {
-        let lower = min(max(start, -1), len - 1);
-        let upper = min(max(end, -1), len - 1);
+        let upper = min(max(start, -1), len - 1);
+        let lower = min(max(end, -1), len - 1);
         (lower, upper)
     }
 }

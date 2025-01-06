@@ -50,3 +50,33 @@ fn test_basic_name_selector() {
     let result = eval_spath(r#"$.store.book.*"#, &value).unwrap();
     assert_debug_snapshot!(result, @r#"[{"author":'Nigel Rees',"category":'reference',"price":8.95,"title":'Sayings of the Century'},{"author":'Evelyn Waugh',"category":'fiction',"price":12.99,"title":'Sword of Honour'},{"author":'Herman Melville',"category":'fiction',"isbn":'0-553-21311-3',"price":8.99,"title":'Moby Dick'},{"author":'J. R. R. Tolkien',"category":'fiction',"isbn":'0-395-19395-8',"price":22.99,"title":'The Lord of the Rings'}]"#);
 }
+
+#[test]
+fn test_basic_index_slice_selector() {
+    let value = json_testdata("rfc-9535-example-4.json");
+    let value = Value::from(value);
+
+    // §2.3.4.3 (Example) Table 7: Index Selector Examples
+    let result = eval_spath(r#"$[1]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"'b'");
+    let result = eval_spath(r#"$[0]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"'a'");
+}
+
+#[test]
+fn test_basic_array_slice_selector() {
+    let value = json_testdata("rfc-9535-example-5.json");
+    let value = Value::from(value);
+
+    // §2.3.4.3 (Example) Table 9: Array Slice Selector Examples
+    let result = eval_spath(r#"$[1:3]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['b','c']");
+    let result = eval_spath(r#"$[5:]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['f','g']");
+    let result = eval_spath(r#"$[1:5:2]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['b','d']");
+    let result = eval_spath(r#"$[5:1:-2]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['f','d']");
+    let result = eval_spath(r#"$[::-1]"#, &value).unwrap();
+    assert_debug_snapshot!(result, @"['g','f','e','d','c','b','a']");
+}
