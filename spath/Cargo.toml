@@ -30,6 +30,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [features]
+default = ["json"]
 json = ["dep:serde_json"]
 
 [dependencies]

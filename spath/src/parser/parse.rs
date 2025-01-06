@@ -108,8 +108,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::LiteralInteger => {
                 // TODO(tisonkun): dispatch slice-selector
-                let text = token.text();
-                let index = text.parse().unwrap();
+                let index = parse_integer(token)?;
                 Ok(Selector::Index { index })
             }
             _ => Err(ParseError::unexpected_token(token.span)),
@@ -133,4 +132,10 @@ impl<'a> Parser<'a> {
             Token::new_eoi(self.source)
         }
     }
+}
+
+fn parse_integer(token: Token) -> Result<i64, ParseError> {
+    let text = token.text();
+    text.parse()
+        .map_err(|err| ParseError::new(token.span, format!("{err}")))
 }

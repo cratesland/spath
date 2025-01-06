@@ -29,6 +29,6 @@ pub fn run_parser(source: &str) -> Result<Expr, ParseError> {
 
 #[test]
 fn test_run_parser() {
-    let expr = run_parser(r#"$["name"][0]"#).unwrap();
+    let expr = run_parser(r#"$["name"][10]"#).unwrap();
     println!("{expr:?}");
 }

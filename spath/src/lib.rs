@@ -20,6 +20,7 @@ pub use error::*;
 
 #[cfg(feature = "json")]
 mod json;
+#[allow(dead_code)]
 mod parser;
 
 #[cfg(test)]
