@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use logos::Source;
 use num_traits::ToPrimitive;
+use std::cmp::{max, min};
 
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
@@ -97,10 +99,17 @@ enum EvalSelector {
         index: i64,
     },
     /// §2.3.4 Array Slice Selector.
+    ///
+    /// Default Array Slice start and end Values:
+    ///
+    /// | Condition | start     | end     |
+    /// |-----------|-----------|---------|
+    /// | step >= 0 | 0         | len     |
+    /// | step < 0  | len - 1   | -len - 1|
     Slice {
-        /// The start index of the slice, inclusive. Default to 0.
+        /// The start index of the slice, inclusive.
         start: Option<i64>,
-        /// The end index of the slice, exclusive. Default to the length of the array.
+        /// The end index of the slice, exclusive.
         end: Option<i64>,
         /// The step to iterate the slice. Default to 1.
         step: i64,
@@ -127,7 +136,50 @@ impl EvalSelector {
                 }
             }
             EvalSelector::Slice { start, end, step } => {
-                todo!("slice selector: {start:?}, {end:?}, {step}")
+                if let Value::Array(vec) = value {
+                    let step = *step;
+                    if step == 0 {
+                        // §2.3.4.2.2. Normative Semantics
+                        // When step = 0, no elements are selected, and the result array is empty.
+                        return Some(Value::Array(vec![]));
+                    }
+
+                    let len = vec.len().to_i64().unwrap_or(i64::MAX);
+                    let (start, end) = if step >= 0 {
+                        match (start, end) {
+                            (Some(start), Some(end)) => (*start, *end),
+                            (Some(start), None) => (*start, len),
+                            (None, Some(end)) => (0, *end),
+                            (None, None) => (0, len),
+                        }
+                    } else {
+                        match (start, end) {
+                            (Some(start), Some(end)) => (*start, *end),
+                            (Some(start), None) => (*start, -len - 1),
+                            (None, Some(end)) => (len - 1, *end),
+                            (None, None) => (len - 1, -len - 1),
+                        }
+                    };
+
+                    let (lower, upper) = bounds(start, end, step, len);
+                    let mut selected = vec![];
+                    if step > 0 {
+                        let mut i = lower;
+                        while i < upper {
+                            selected.push(vec[i as usize].clone());
+                            i = i + step;
+                        }
+                    } else if step < 0 {
+                        let mut i = upper;
+                        while lower < i {
+                            selected.push(vec[i as usize].clone());
+                            i = i + step;
+                        }
+                    } // else assert_ne!(step, 0);
+                    Some(Value::Array(selected))
+                } else {
+                    None
+                }
             }
         }
     }
@@ -138,7 +190,7 @@ fn resolve_index(index: i64, len: usize) -> Option<usize> {
     let index = if index >= 0 {
         index.to_usize()?
     } else {
-        let index = len as i64 + index;
+        let index = len.to_i64().unwrap_or(i64::MAX) + index;
         index.to_usize()?
     };
 
@@ -146,6 +198,30 @@ fn resolve_index(index: i64, len: usize) -> Option<usize> {
         Some(index)
     } else {
         None
+    }
+}
+
+// §2.3.4.2.2. (Array Slice Selector) Normative Semantics
+fn bounds(start: i64, end: i64, step: i64, len: i64) -> (i64, i64) {
+    fn normalize(i: i64, len: i64) -> i64 {
+        if i < 0 {
+            len + i
+        } else {
+            i
+        }
+    }
+
+    let start = normalize(start, len);
+    let end = normalize(end, len);
+
+    if step >= 0 {
+        let lower = min(max(start, 0), len);
+        let upper = min(max(end, 0), len);
+        (lower, upper)
+    } else {
+        let lower = min(max(start, -1), len - 1);
+        let upper = min(max(end, -1), len - 1);
+        (lower, upper)
     }
 }
 
