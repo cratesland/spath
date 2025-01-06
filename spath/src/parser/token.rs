@@ -17,7 +17,7 @@ use std::fmt;
 use logos::Lexer;
 use logos::Logos;
 
-use crate::ParseError;
+use crate::parser::error::ParseError;
 use crate::parser::range::Range;
 
 #[derive(Clone, Copy, PartialEq, Eq)]

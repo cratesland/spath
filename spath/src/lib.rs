@@ -21,11 +21,9 @@ pub use error::*;
 mod spath;
 pub use spath::*;
 
-mod parser;
-use parser::error::ParseError;
-
 #[cfg(feature = "json")]
 mod json;
+mod parser;
 
 #[cfg(test)]
 fn manifest_dir() -> std::path::PathBuf {

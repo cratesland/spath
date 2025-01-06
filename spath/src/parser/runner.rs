@@ -16,7 +16,7 @@ use crate::parser::ast::Segment;
 use crate::parser::parse::Parser;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
-use crate::ParseError;
+use crate::parser::error::ParseError;
 
 pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
     Tokenizer::new(source).collect::<Result<_, _>>()

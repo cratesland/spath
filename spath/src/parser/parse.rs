@@ -18,7 +18,7 @@ use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
-use crate::ParseError;
+use crate::parser::error::ParseError;
 
 #[derive(Debug)]
 pub struct Parser<'a> {

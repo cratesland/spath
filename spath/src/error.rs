@@ -14,4 +14,8 @@
 
 #[derive(Debug, thiserror::Error)]
 #[error("{0}")]
+pub struct BindError(pub String);
+
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
 pub struct EvalError(pub String);

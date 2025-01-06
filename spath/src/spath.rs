@@ -14,8 +14,7 @@
 
 use crate::parser::ast::{Segment, Selector};
 use crate::parser::runner::run_parser;
-use crate::ParseError;
-use crate::Value;
+use crate::{BindError, Value};
 
 #[derive(Debug, Clone)]
 pub struct SPath {
@@ -23,8 +22,21 @@ pub struct SPath {
 }
 
 impl SPath {
+    pub fn new(source: &str) -> Result<Self, BindError> {
+        let segments = run_parser(source).map_err(|err| BindError(format!("{err}")))?;
+        let binder = Binder {};
+        Ok(binder.bind(segments))
+    }
+
     pub fn eval(&self, value: Value) -> Option<Value> {
-        None
+        let mut root = value;
+        for segment in self.segments {
+            if let Some(result) = self.eval_segment(segment, result, result) {
+                result
+            } else {
+                return None;
+            }
+        }
     }
 }
 
@@ -67,45 +79,38 @@ enum EvalSelector {
     },
 }
 
-#[derive(Debug)]
-pub struct Binder {
-    segments: Vec<Segment>,
-}
+#[derive(Debug, Clone)]
+pub struct Binder {}
 
 impl Binder {
-    /// Create a new binder by parsing the spath expression.
-    pub fn parse(source: &str) -> Result<Self, ParseError> {
-        let segments = run_parser(source)?;
-        Ok(Self { segments })
-    }
-
-    /// Bind the segments to the eval context.
-    pub fn bind(&self) -> SPath {
-        let segments = self.segments.iter().map(|s| self.bind_segment(s)).collect();
+    fn bind(&self, segments: Vec<Segment>) -> SPath {
+        let segments = segments.into_iter().map(|s| self.bind_segment(s)).collect();
         SPath { segments }
     }
 
-    fn bind_segment(&self, segment: &Segment) -> EvalSegment {
+    fn bind_segment(&self, segment: Segment) -> EvalSegment {
         match segment {
             Segment::Child { selectors } => EvalSegment::Child {
-                selectors: selectors.iter().map(|s| self.bind_selector(s)).collect(),
+                selectors: selectors
+                    .into_iter()
+                    .map(|s| self.bind_selector(s))
+                    .collect(),
             },
             Segment::Descendant { selectors } => EvalSegment::Descendant {
-                selectors: selectors.iter().map(|s| self.bind_selector(s)).collect(),
+                selectors: selectors
+                    .into_iter()
+                    .map(|s| self.bind_selector(s))
+                    .collect(),
             },
         }
     }
 
-    fn bind_selector(&self, selector: &Selector) -> EvalSelector {
+    fn bind_selector(&self, selector: Selector) -> EvalSelector {
         match selector {
             Selector::Wildcard => EvalSelector::Wildcard,
-            Selector::Identifier { name } => EvalSelector::Identifier { name: name.clone() },
+            Selector::Identifier { name } => EvalSelector::Identifier { name },
             Selector::Index { index } => EvalSelector::Index { index: *index },
-            Selector::Slice { start, end, step } => EvalSelector::Slice {
-                start: *start,
-                end: *end,
-                step: *step,
-            },
+            Selector::Slice { start, end, step } => EvalSelector::Slice { start, end, step },
         }
     }
 }
