@@ -79,6 +79,24 @@ pub enum Number {
     F64(F64),
 }
 
+impl From<i64> for Number {
+    fn from(n: i64) -> Self {
+        Number::I64(n)
+    }
+}
+
+impl From<u64> for Number {
+    fn from(n: u64) -> Self {
+        Number::U64(n)
+    }
+}
+
+impl From<f64> for Number {
+    fn from(n: f64) -> Self {
+        Number::F64(F64::from(n))
+    }
+}
+
 impl fmt::Debug for Number {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

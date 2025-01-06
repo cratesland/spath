@@ -18,6 +18,7 @@ use std::cmp::Ordering;
 
 use num_traits::ToPrimitive;
 
+use crate::parser::ast::RootPathQuery;
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::runner::run_parser;
@@ -31,7 +32,8 @@ pub struct SPath {
 
 impl SPath {
     pub fn new(source: &str) -> Result<Self, BindError> {
-        let segments = run_parser(source).map_err(|err| BindError(format!("{err}")))?;
+        let RootPathQuery { segments } =
+            run_parser(source).map_err(|err| BindError(format!("{err}")))?;
         let binder = Binder {};
         Ok(binder.bind(segments))
     }

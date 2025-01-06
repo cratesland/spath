@@ -14,6 +14,7 @@
 
 use std::iter::Peekable;
 
+use crate::parser::ast::RootPathQuery;
 use crate::parser::ast::Segment;
 use crate::parser::ast::Selector;
 use crate::parser::error::ParseError;
@@ -37,7 +38,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Segment>, ParseError> {
+    pub fn parse(&mut self) -> Result<RootPathQuery, ParseError> {
         let first = self.next_token();
 
         // §2.2.1 (Root Identifier) Syntax
@@ -47,11 +48,15 @@ impl<'a> Parser<'a> {
             _ => return Err(ParseError::unexpected_token(first.span)),
         }
 
+        self.parse_root_path_query()
+    }
+
+    fn parse_root_path_query(&mut self) -> Result<RootPathQuery, ParseError> {
         let mut segments = vec![];
         while let Some(segment) = self.parse_segment()? {
             segments.push(segment);
         }
-        Ok(segments)
+        Ok(RootPathQuery { segments })
     }
 
     fn parse_segment(&mut self) -> Result<Option<Segment>, ParseError> {
@@ -69,6 +74,12 @@ impl<'a> Parser<'a> {
                         selectors: vec![Selector::Wildcard],
                     })),
                     TokenKind::Ident => {
+                        let name = token.text().to_string();
+                        Ok(Some(Segment::Child {
+                            selectors: vec![Selector::Identifier { name }],
+                        }))
+                    }
+                    TokenKind::NULL => {
                         let name = token.text().to_string();
                         Ok(Some(Segment::Child {
                             selectors: vec![Selector::Identifier { name }],

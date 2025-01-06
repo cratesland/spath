@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use googletest::assert_that;
+use googletest::matchers::none;
 use googletest::prelude::eq;
+use googletest::prelude::some;
 use insta::assert_debug_snapshot;
 
 use crate::json_testdata;
@@ -137,4 +139,28 @@ fn test_basic_child_and_descendant_segment() {
     assert_debug_snapshot!(result, @"[[1,2],[1,2]]");
     let result = eval_spath(r#"$.a..[0, 1]"#, &value).unwrap();
     assert_debug_snapshot!(result, @r#"[5,3,{"j":4},{"k":6}]"#);
+}
+
+#[test]
+fn test_basic_null_semantic() {
+    // §2.6 Semantics of null
+    //
+    // JSON null is treated the same as any other JSON value, i.e.,
+    // it is not taken to mean "undefined" or "missing".
+    let value = json_testdata("rfc-9535-example-10.json");
+    let value = Value::from(value);
+
+    // §2.6.1 (Example) Table 17: Examples Involving (or Not Involving) null
+    assert_that!(eval_spath(r#"$.a"#, &value), some(eq(&Value::Null)));
+    assert_that!(eval_spath(r#"$.a[0]"#, &value), none());
+    assert_that!(eval_spath(r#"$.a.d"#, &value), none());
+    assert_that!(eval_spath(r#"$.b[0]"#, &value), some(eq(&Value::Null)));
+    assert_that!(
+        eval_spath(r#"$.b[*]"#, &value),
+        some(eq(&Value::Array(vec![Value::Null])))
+    );
+    assert_that!(
+        eval_spath(r#"$.null"#, &value),
+        some(eq(&Value::Number(1i64.into())))
+    );
 }

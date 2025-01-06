@@ -13,6 +13,11 @@
 // limitations under the License.
 
 #[derive(Debug, Clone)]
+pub struct RootPathQuery {
+    pub segments: Vec<Segment>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Segment {
     /// §2.5.1 Child Segment.
     Child {
