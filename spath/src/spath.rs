@@ -119,7 +119,12 @@ impl EvalSelector {
                 }
             }
             EvalSelector::Index { index } => {
-                todo!("index selector: {index}")
+                if let Value::Array(vec) = value {
+                    let index = resolve_index(*index, vec.len())?;
+                    vec.get(index).cloned()
+                } else {
+                    None
+                }
             }
             EvalSelector::Slice { start, end, step } => {
                 todo!("slice selector: {start:?}, {end:?}, {step}")
@@ -128,6 +133,7 @@ impl EvalSelector {
     }
 }
 
+// §2.3.3.2. (Index Selector) Semantics
 fn resolve_index(index: i64, len: usize) -> Option<usize> {
     let index = if index >= 0 {
         index.to_usize()?
