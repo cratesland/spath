@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking changes
 
-* Rework `Value` to three traits: `VariantValue`, `VariantArray`, and `VariantObject`. Now, we don't need to convert values between different semi-structure data implementation.
+* Rework `Value` to three traits: `VariantValue`, `ConcreteVariantArray`, and `ConcreteVariantObject`. Now, we don't need to convert values between different semi-structure data implementation.
 
 ### New features
 
