@@ -26,15 +26,11 @@ fn eval_spath(spath: &str, value: &Value) -> Option<Value> {
 }
 
 #[test]
-fn test_root_wildcard() {
+fn test_root_identical() {
     let value = json_testdata("rfc-9535-example-1.json");
     let value = Value::from(value);
 
     let result = eval_spath("$", &value).unwrap();
-    assert_that!(result, eq(&value));
-    let result = eval_spath("$.*", &value).unwrap();
-    assert_that!(result, eq(&value));
-    let result = eval_spath("$[*]", &value).unwrap();
     assert_that!(result, eq(&value));
 }
 
@@ -102,13 +98,13 @@ fn test_basic_child_and_descendant_segment() {
     let result = eval_spath(r#"$..[0]"#, &value).unwrap();
     assert_debug_snapshot!(result, @r#"[5,{"j":4}]"#);
     let result = eval_spath(r#"$..*"#, &value).unwrap();
-    assert_debug_snapshot!(result, @r#"[{"a":[5,3,[{"j":4},{"k":6}]],"o":{"j":1,"k":2}},{"j":1,"k":2},2,1,[5,3,[{"j":4},{"k":6}]],[{"j":4},{"k":6}],{"k":6},6,{"j":4},4,3,5]"#);
+    assert_debug_snapshot!(result, @r#"[[[5,3,[{"j":4},{"k":6}]],{"j":1,"k":2}],[1,2],[5,3,[{"j":4},{"k":6}]],[{"j":4},{"k":6}],[6],[4]]"#);
     let result = eval_spath(r#"$..[*]"#, &value).unwrap();
-    assert_debug_snapshot!(result, @r#"[{"a":[5,3,[{"j":4},{"k":6}]],"o":{"j":1,"k":2}},{"j":1,"k":2},2,1,[5,3,[{"j":4},{"k":6}]],[{"j":4},{"k":6}],{"k":6},6,{"j":4},4,3,5]"#);
+    assert_debug_snapshot!(result, @r#"[[[5,3,[{"j":4},{"k":6}]],{"j":1,"k":2}],[1,2],[5,3,[{"j":4},{"k":6}]],[{"j":4},{"k":6}],[6],[4]]"#);
     let result = eval_spath(r#"$..o"#, &value).unwrap();
     assert_debug_snapshot!(result, @r#"[{"j":1,"k":2}]"#);
     let result = eval_spath(r#"$.o..[*, *]"#, &value).unwrap();
-    assert_debug_snapshot!(result, @r#"[{"j":1,"k":2},{"j":1,"k":2},2,2,1,1]"#);
+    assert_debug_snapshot!(result, @"[[1,2],[1,2]]");
     let result = eval_spath(r#"$.a..[0, 1]"#, &value).unwrap();
     assert_debug_snapshot!(result, @r#"[5,3,{"j":4},{"k":6}]"#);
 }

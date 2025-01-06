@@ -156,7 +156,18 @@ enum EvalSelector {
 impl EvalSelector {
     fn eval(&self, _root: &Value, value: &Value) -> Option<Value> {
         match self {
-            EvalSelector::Wildcard => Some(value.clone()),
+            EvalSelector::Wildcard => match value {
+                // §2.3.2.2 (Wildcard Selector) Semantics
+                //
+                // A wildcard selector selects the nodes of all children of an object or array.
+                //
+                // Note that the children of an object are its member values, not its member names.
+                //
+                // The wildcard selector selects nothing from a primitive JSON value.
+                Value::Array(vec) => Some(Value::Array(vec.clone())),
+                Value::Object(map) => Some(Value::Array(map.values().cloned().collect())),
+                _ => None,
+            },
             EvalSelector::Identifier { name } => {
                 if let Value::Object(map) = value {
                     map.get(name).cloned()
