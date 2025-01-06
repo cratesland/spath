@@ -80,10 +80,42 @@ impl EvalSegment {
                     Some(Value::Array(result))
                 }
             }
-            EvalSegment::Descendant {
-                selectors: _selectors,
-            } => {
-                todo!("descendant segment")
+            EvalSegment::Descendant { selectors } => {
+                // §2.5.2.2. Semantics
+                //
+                // A descendant segment produces zero or more descendants of an input value.
+                //
+                // For each node in the input nodelist, a descendant selector visits the input
+                // node and each of its descendants such that:
+                //
+                // 1. nodes of any array are visited in array order, and
+                // 2. nodes are visited before their descendants.
+                //
+                // NOTE: This is effectively a breadth-first traversal of the input value.
+                //
+                // The order in which the children of an object are visited is not stipulated,
+                // since JSON objects are unordered.
+                //
+                // NOTE: SPath ensures that children of an object are visited in the order of
+                // their string key.
+
+                let mut result = vec![];
+                let mut queue = vec![value];
+                while let Some(value) = queue.pop() {
+                    for selector in selectors {
+                        if let Some(res) = selector.eval(root, &value) {
+                            result.push(res.clone());
+                        }
+                    }
+
+                    // visit the descendants
+                    match value {
+                        Value::Object(map) => queue.extend(map.into_values()),
+                        Value::Array(vec) => queue.extend(vec),
+                        _ => {}
+                    }
+                }
+                Some(Value::Array(result))
             }
         }
     }
@@ -238,7 +270,17 @@ fn bounds(start: i64, end: i64, step: i64, len: i64) -> (i64, i64) {
 
 #[derive(Default, Debug, Clone)]
 #[non_exhaustive]
-pub struct Binder {}
+pub struct Binder {
+    // TODO(tisonkun): support configure eval options
+    //
+    // For example, an upper bound to stop iterating descendants as described
+    // at §4.1. Attack Vectors on JSONPath Implementations.
+    //
+    // For example, those that are supported at [1].
+    // [1] https://github.com/json-path/JsonPath/blob/master/json-path/src/main/java/com/jayway/jsonpath/Option.java
+    //
+    // Also, after SPath supports filter selector, allow to register custom functions.
+}
 
 impl Binder {
     fn bind(&self, segments: Vec<Segment>) -> SPath {
