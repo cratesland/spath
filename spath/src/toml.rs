@@ -83,39 +83,3 @@ impl ConcreteVariantObject for Table {
         self.values()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use insta::assert_compact_json_snapshot;
-
-    use super::*;
-    use crate::manifest_dir;
-    use crate::SPath;
-
-    fn toml_testdata(filename: &str) -> Value {
-        let path = manifest_dir().join("testdata").join(filename);
-        let content = std::fs::read_to_string(path).unwrap();
-        toml::from_str(&content).unwrap()
-    }
-
-    fn eval_spath(spath: &str, value: &Value) -> Option<Value> {
-        let spath = SPath::new(spath).unwrap();
-        spath.eval(value)
-    }
-
-    #[test]
-    fn test_root_identical() {
-        let value = toml_testdata("learn-toml-in-y-minutes.toml");
-        let result = eval_spath("$", &value).unwrap();
-        assert_eq!(result, value);
-    }
-
-    #[test]
-    fn test_casual() {
-        let value = toml_testdata("learn-toml-in-y-minutes.toml");
-        let result = eval_spath(r#"$..["name"]"#, &value).unwrap();
-        assert_compact_json_snapshot!(result, @r#"["Nail", "array of table"]"#);
-        let result = eval_spath(r#"$..[1]"#, &value).unwrap();
-        assert_compact_json_snapshot!(result, @r#"[{}, "is", ["all", "strings", "are the same", "type"], "strings", 2.4, "different", "are", 2]"#);
-    }
-}

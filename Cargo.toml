@@ -23,6 +23,10 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/cratesland/spath"
 rust-version = "1.80.0"
+version = "0.2.0"
+
+[workspace.dependencies]
+spath = { version = "0.2.0", path = "spath" }
 
 [workspace.lints.rust]
 unknown_lints = "deny"

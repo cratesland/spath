@@ -468,6 +468,7 @@ dependencies = [
  "logos",
  "num-traits",
  "serde_json",
+ "spath",
  "thiserror",
  "toml",
 ]

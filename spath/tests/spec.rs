@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Spec tests based on RFC-9535.
+
+mod common;
+use common::manifest_dir;
 use googletest::assert_that;
 use googletest::matchers::none;
 use googletest::prelude::eq;
 use googletest::prelude::some;
 use insta::assert_compact_json_snapshot;
-
-use crate::manifest_dir;
-use crate::SPath;
-use crate::VariantValue;
+use spath::SPath;
+use spath::VariantValue;
 
 fn json_testdata(filename: &str) -> serde_json::Value {
     let path = manifest_dir().join("testdata").join(filename);

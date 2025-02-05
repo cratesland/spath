@@ -92,17 +92,8 @@ pub use error::*;
 mod spath;
 pub use spath::*;
 
-#[cfg(any(feature = "json", test))]
+#[cfg(feature = "json")]
 mod json;
 mod parser;
 #[cfg(feature = "toml")]
 mod toml;
-
-#[cfg(test)]
-mod tests;
-
-#[cfg(test)]
-fn manifest_dir() -> std::path::PathBuf {
-    let dir = env!("CARGO_MANIFEST_DIR");
-    std::path::PathBuf::from(dir).canonicalize().unwrap()
-}

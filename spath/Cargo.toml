@@ -14,7 +14,6 @@
 
 [package]
 name = "spath"
-version = "0.2.0"
 
 description = """
 SPath is query expressions for semi-structured data. You can use it
@@ -28,6 +27,7 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+version.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
@@ -51,6 +51,8 @@ toml = { version = "0.8.19", optional = true }
 googletest = { version = "0.13.0" }
 insta = { version = "1.41.1", features = ["json"] }
 serde_json = { version = "1.0.133" }
+spath = { path = ".", features = ["json", "toml"] }
+toml = { version = "0.8.19" }
 
 [lints]
 workspace = true
