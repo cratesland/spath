@@ -15,13 +15,26 @@
 use toml::Table;
 use toml::Value;
 
-use crate::ConcreteVariantArray;
-use crate::ConcreteVariantObject;
-use crate::VariantValue;
+use crate::value::ConcreteVariantArray;
+use crate::value::ConcreteVariantObject;
+use crate::value::VariantValue;
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Table;
+
+    fn is_null(&self) -> bool {
+        // toml 1.0 does not have null
+        //
+        // @see https://github.com/toml-lang/toml/issues/975
+        // @see https://github.com/toml-lang/toml.io/issues/70
+        // @see https://github.com/toml-lang/toml/issues/30
+        false
+    }
+
+    fn is_boolean(&self) -> bool {
+        self.is_bool()
+    }
 
     fn is_array(&self) -> bool {
         self.is_array()
@@ -31,16 +44,16 @@ impl VariantValue for Value {
         self.is_table()
     }
 
+    fn as_bool(&self) -> Option<bool> {
+        self.as_bool()
+    }
+
     fn as_array(&self) -> Option<&Self::VariantArray> {
         self.as_array()
     }
 
     fn as_object(&self) -> Option<&Self::VariantObject> {
         self.as_table()
-    }
-
-    fn make_array(iter: impl IntoIterator<Item = Self>) -> Self {
-        Value::Array(iter.into_iter().collect())
     }
 }
 

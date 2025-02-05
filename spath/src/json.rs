@@ -15,13 +15,21 @@
 use serde_json::Map;
 use serde_json::Value;
 
-use crate::ConcreteVariantArray;
-use crate::ConcreteVariantObject;
-use crate::VariantValue;
+use crate::value::ConcreteVariantArray;
+use crate::value::ConcreteVariantObject;
+use crate::value::VariantValue;
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Map<String, Value>;
+
+    fn is_null(&self) -> bool {
+        self.is_null()
+    }
+
+    fn is_boolean(&self) -> bool {
+        self.is_boolean()
+    }
 
     fn is_array(&self) -> bool {
         self.is_array()
@@ -31,16 +39,16 @@ impl VariantValue for Value {
         self.is_object()
     }
 
+    fn as_bool(&self) -> Option<bool> {
+        self.as_bool()
+    }
+
     fn as_array(&self) -> Option<&Self::VariantArray> {
         self.as_array()
     }
 
     fn as_object(&self) -> Option<&Self::VariantObject> {
         self.as_object()
-    }
-
-    fn make_array(iter: impl IntoIterator<Item = Self>) -> Self {
-        Value::Array(iter.into_iter().collect())
     }
 }
 

@@ -13,87 +13,14 @@
 // limitations under the License.
 
 //! # SPath: Query expressions for semi-structured data
-//!
-//! You can use it as a drop-in replacement for JSONPath, but also for other semi-structured data
-//! formats like TOML or user-defined variants.
-//!
-//! ## Examples
-//!
-//! ### JSON
-//!
-//! Here is a quick example that shows how to use the `spath` crate to query
-//! JSONPath alike expression over JSON data:
-//!
-//! ```rust
-//! # #[cfg(feature = "json")]
-//! # {
-//! use serde_json::json;
-//! use serde_json::Value;
-//! use spath::SPath;
-//! use spath::VariantValue;
-//!
-//! let data = json!({
-//!   "name": "John Doe",
-//!   "age": 43,
-//!   "phones": [
-//!     "+44 1234567",
-//!     "+44 2345678"
-//!   ]
-//! });
-//!
-//! let spath = SPath::new("$.phones[1]").unwrap();
-//! let result = spath.eval(&data).unwrap();
-//! assert_eq!(result, json!("+44 2345678"));
-//! # }
-//! ```
-//!
-//! ### TOML
-//!
-//! Here is a quick example that shows how to use the `spath` crate to query
-//! JSONPath alike expression over TOML data:
-//!
-//! ```rust
-//! # #[cfg(feature = "toml")]
-//! # {
-//! use spath::SPath;
-//! use spath::VariantValue;
-//! use toml::Value;
-//!
-//! let data = r#"
-//! [package]
-//! name = "spath"
-//! version = "0.1.0"
-//! authors = ["tison"]
-//!
-//! [dependencies]
-//! serde = "1.0"
-//! "#;
-//!
-//! let data = data.parse::<Value>().unwrap();
-//! let spath = SPath::new("$.package.name").unwrap();
-//! let result = spath.eval(&data).unwrap();
-//! assert_eq!(result, Value::String("spath".to_string()));
-//! # }
-//! ```
-//!
-//! ## Feature flags
-//!
-//! - `json`: impl [`VariantValue`] for `serde_json::Value`.
-//! - `toml`: impl [`VariantValue`] for `toml::Value`.
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-mod value;
-pub use value::*;
-
-mod error;
-pub use error::*;
-
-mod spath;
-pub use spath::*;
+pub mod node;
+pub mod path;
+pub mod value;
 
 #[cfg(feature = "json")]
 mod json;
-mod parser;
 #[cfg(feature = "toml")]
 mod toml;

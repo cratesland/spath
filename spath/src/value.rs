@@ -12,23 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Public traits for variant (semi-structured) data values.
+
 /// A trait for any variant value.
 pub trait VariantValue: Clone {
     /// The type of the array variant.
     type VariantArray: ConcreteVariantArray<Value = Self>;
     /// The type of the object variant.
     type VariantObject: ConcreteVariantObject<Value = Self>;
+    /// Whether the value is a null.
+    fn is_null(&self) -> bool;
+    /// Whether the value is a boolean.
+    fn is_boolean(&self) -> bool;
     /// Whether the value is an array.
     fn is_array(&self) -> bool;
     /// Whether the value is an object.
     fn is_object(&self) -> bool;
+    /// Convert the value to a bool; [`None`] if the value is not an array.
+    fn as_bool(&self) -> Option<bool>;
     /// Convert the value to an array; [`None`] if the value is not an array.
     fn as_array(&self) -> Option<&Self::VariantArray>;
     /// Convert the value to an object; [`None`] if the value is not an object.
     fn as_object(&self) -> Option<&Self::VariantObject>;
-
-    /// Convert an owning iterator of variant values to an array.
-    fn make_array(iter: impl IntoIterator<Item = Self>) -> Self;
 }
 
 /// A trait for the concrete variant array type associated with a variant value.

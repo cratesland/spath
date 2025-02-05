@@ -54,6 +54,10 @@ fn main() {
 
 `spath` is [on crates.io](https://crates.io/crates/spath) and can be used by adding `spath` to your dependencies in your project's `Cargo.toml`. Or more simply, just run `cargo add spath`.
 
-## License
+## License and
 
 This project is licensed under [Apache License, Version 2.0](LICENSE).
+
+## History
+
+From 0.3.0, this crate is reimplemented as a fork of [serde_json_path](https://crates.io/crates/serde_json_path), with modifications to support other semi-structured data values.
