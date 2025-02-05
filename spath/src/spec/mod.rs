@@ -14,8 +14,22 @@
 
 //! Types representing the concepts of RFC 9535.
 
+use crate::{ConcreteVariantArray, ConcreteVariantObject, VariantValue};
+
 pub mod functions;
 pub mod integer;
 pub mod query;
 pub mod segment;
 pub mod selector;
+
+fn select_wildcard<'b, T: VariantValue>(result: &mut Vec<&'b T>, current: &'b T) {
+    if let Some(list) = current.as_array() {
+        for v in list.iter() {
+            result.push(v);
+        }
+    } else if let Some(obj) = current.as_object() {
+        for v in obj.values() {
+            result.push(v);
+        }
+    }
+}

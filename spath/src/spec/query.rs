@@ -125,7 +125,9 @@ impl Queryable for Query {
         };
         for s in &self.segments {
             let mut r = vec![];
-            for LocatedNode { loc, node } in result {
+            for n in result {
+                let loc = n.location();
+                let node = n.node();
                 r.append(&mut s.query_located(node, root, loc.clone()));
             }
             result = r;

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use crate::spec::query::Queryable;
+use crate::spec::select_wildcard;
 use crate::spec::selector::Selector;
 use crate::{
     ConcreteVariantArray, ConcreteVariantObject, LocatedNode, NormalizedPath, VariantValue,
@@ -193,33 +194,23 @@ impl fmt::Display for Segment {
 
 impl Queryable for Segment {
     fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
-        let mut query = Vec::new();
+        let mut result = Vec::new();
         match self {
             Segment::LongHand(selectors) => {
                 for selector in selectors {
-                    query.append(&mut selector.query(current, root));
+                    result.append(&mut selector.query(current, root));
                 }
             }
             Segment::DotName(key) => {
                 if let Some(obj) = current.as_object() {
                     if let Some(v) = obj.get(key) {
-                        query.push(v);
+                        result.push(v);
                     }
                 }
             }
-            Segment::Wildcard => {
-                if let Some(list) = current.as_array() {
-                    for v in list.iter() {
-                        query.push(v);
-                    }
-                } else if let Some(obj) = current.as_object() {
-                    for v in obj.values() {
-                        query.push(v);
-                    }
-                }
-            }
+            Segment::Wildcard => select_wildcard(&mut result, current),
         }
-        query
+        result
     }
 
     fn query_located<'b, T: VariantValue>(

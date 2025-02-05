@@ -123,7 +123,7 @@ impl Slice {
 impl Queryable for Slice {
     fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
         if let Some(list) = current.as_array() {
-            let mut query = Vec::new();
+            let mut result = Vec::new();
             let step = self.step.unwrap_or(Integer::from_i64_unchecked(1));
             if step == 0 {
                 return vec![];
@@ -136,7 +136,7 @@ impl Queryable for Slice {
                 let mut i = lower;
                 while i < upper {
                     if let Some(v) = usize::try_from(i).ok().and_then(|i| list.get(i)) {
-                        query.push(v);
+                        result.push(v);
                     }
                     i = if let Some(i) = i.checked_add(step) {
                         i
@@ -151,7 +151,7 @@ impl Queryable for Slice {
                 let mut i = upper;
                 while lower < i {
                     if let Some(v) = usize::try_from(i).ok().and_then(|i| list.get(i)) {
-                        query.push(v);
+                        result.push(v);
                     }
                     i = if let Some(i) = i.checked_add(step) {
                         i
@@ -160,7 +160,7 @@ impl Queryable for Slice {
                     };
                 }
             }
-            query
+            result
         } else {
             vec![]
         }
