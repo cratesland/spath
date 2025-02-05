@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # SPath: Query expressions for semi-structured data
+//! Types representing the different selectors in SPath.
 
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+pub mod filter;
+pub mod index;
+pub mod name;
+pub mod slice;
 
-mod node;
-pub use node::*;
+use std::fmt;
 
-mod path;
-pub use path::*;
+/// An SPath selector
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Selector {}
 
-mod spec;
-
-mod value;
-pub use value::*;
-
-#[cfg(feature = "json")]
-mod json;
-#[cfg(feature = "toml")]
-mod toml;
+impl fmt::Display for Selector {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        todo!("implement Selector Display")
+    }
+}

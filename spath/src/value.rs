@@ -60,6 +60,10 @@ pub trait ConcreteVariantObject {
     fn len(&self) -> usize;
     /// Get the value for the given key; [`None`] if the key is not present.
     fn get(&self, key: &str) -> Option<&Self::Value>;
+    /// Get the key-value pair for the given key; [`None`] if the key is not present.
+    fn get_key_value(&self, key: &str) -> Option<(&String, &Self::Value)>;
+    /// An iterator over the key-value pairs in the object.
+    fn iter(&self) -> impl Iterator<Item = (&String, &Self::Value)>;
     /// An iterator over the values in the object.
     fn values(&self) -> impl Iterator<Item = &Self::Value>;
 }

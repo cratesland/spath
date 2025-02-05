@@ -138,6 +138,18 @@ impl PathElement<'_> {
     }
 }
 
+impl<'a> From<&'a String> for PathElement<'a> {
+    fn from(s: &'a String) -> Self {
+        Self::Name(s.as_str())
+    }
+}
+
+impl From<usize> for PathElement<'_> {
+    fn from(index: usize) -> Self {
+        Self::Index(index)
+    }
+}
+
 impl PartialOrd for PathElement<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))

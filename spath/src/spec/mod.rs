@@ -12,22 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # SPath: Query expressions for semi-structured data
+//! Types representing the concepts of RFC 9535.
 
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
-
-mod node;
-pub use node::*;
-
-mod path;
-pub use path::*;
-
-mod spec;
-
-mod value;
-pub use value::*;
-
-#[cfg(feature = "json")]
-mod json;
-#[cfg(feature = "toml")]
-mod toml;
+pub mod functions;
+pub mod integer;
+pub mod query;
+pub mod segment;
+pub mod selector;

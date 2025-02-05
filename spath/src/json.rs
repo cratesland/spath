@@ -87,6 +87,14 @@ impl ConcreteVariantObject for Map<String, Value> {
         self.get(key)
     }
 
+    fn get_key_value(&self, key: &str) -> Option<(&String, &Self::Value)> {
+        self.get_key_value(key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&String, &Self::Value)> {
+        self.iter()
+    }
+
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
         self.values()
     }
