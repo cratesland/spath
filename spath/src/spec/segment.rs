@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt;
+
 use crate::spec::query::Queryable;
 use crate::spec::select_wildcard;
 use crate::spec::selector::Selector;
-use crate::{
-    ConcreteVariantArray, ConcreteVariantObject, LocatedNode, NormalizedPath, VariantValue,
-};
-use std::fmt;
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
+use crate::LocatedNode;
+use crate::NormalizedPath;
+use crate::VariantValue;
 
 /// A segment of a JSONPath query
 #[derive(Debug, PartialEq, Eq, Clone)]

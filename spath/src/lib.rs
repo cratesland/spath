@@ -22,7 +22,7 @@ pub use node::*;
 mod path;
 pub use path::*;
 
-mod spec;
+pub mod spec;
 
 mod value;
 pub use value::*;

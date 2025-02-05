@@ -1,10 +1,36 @@
+// Copyright 2024 tison <wander4096@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Slice selectors for selecting array slices in SPath.
 
 use crate::spec::integer::Integer;
 use crate::spec::query::Queryable;
-use crate::{ConcreteVariantArray, LocatedNode, NormalizedPath, VariantValue};
+use crate::ConcreteVariantArray;
+use crate::LocatedNode;
+use crate::NormalizedPath;
+use crate::VariantValue;
 
-/// A slice selector.
+/// Array slice selector.
+///
+/// §2.3.4 Array Slice Selector.
+///
+/// Default Array Slice start and end Values:
+///
+/// | Condition | start     | end     |
+/// |-----------|-----------|---------|
+/// | step >= 0 | 0         | len     |
+/// | step < 0  | len - 1   | -len - 1|
 #[derive(Debug, PartialEq, Eq, Default, Clone, Copy)]
 pub struct Slice {
     /// The start of the slice.

@@ -14,18 +14,21 @@
 
 //! Types representing queries in JSONPath
 
-use crate::{node::LocatedNode, path::NormalizedPath, VariantValue};
 use std::fmt;
 
 use super::segment::QuerySegment;
+use crate::node::LocatedNode;
+use crate::path::NormalizedPath;
+use crate::VariantValue;
 
 mod sealed {
-    use crate::spec::{
-        segment::{QuerySegment, Segment},
-        selector::{index::Index, name::Name, slice::Slice, Selector},
-    };
-
     use super::Query;
+    use crate::spec::segment::QuerySegment;
+    use crate::spec::segment::Segment;
+    use crate::spec::selector::index::Index;
+    use crate::spec::selector::name::Name;
+    use crate::spec::selector::slice::Slice;
+    use crate::spec::selector::Selector;
 
     pub trait Sealed {}
     impl Sealed for Query {}
@@ -60,19 +63,20 @@ pub struct Query {
     pub segments: Vec<QuerySegment>,
 }
 
-impl Query {
-    pub(crate) fn is_singular(&self) -> bool {
-        for s in &self.segments {
-            if s.is_descendent() {
-                return false;
-            }
-            if !s.segment.is_singular() {
-                return false;
-            }
-        }
-        true
-    }
-}
+// TODO(tisonkun): for filter functions
+// impl Query {
+//     pub(crate) fn is_singular(&self) -> bool {
+//         for s in &self.segments {
+//             if s.is_descendent() {
+//                 return false;
+//             }
+//             if !s.segment.is_singular() {
+//                 return false;
+//             }
+//         }
+//         true
+//     }
+// }
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

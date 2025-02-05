@@ -14,7 +14,8 @@
 
 use std::cmp::Ordering;
 use std::fmt;
-use std::num::{ParseIntError, TryFromIntError};
+use std::num::ParseIntError;
+use std::num::TryFromIntError;
 use std::str::FromStr;
 
 /// An integer of [RFC 7493].

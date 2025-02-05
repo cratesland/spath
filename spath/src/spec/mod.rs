@@ -14,7 +14,9 @@
 
 //! Types representing the concepts of RFC 9535.
 
-use crate::{ConcreteVariantArray, ConcreteVariantObject, VariantValue};
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
+use crate::VariantValue;
 
 pub mod functions;
 pub mod integer;

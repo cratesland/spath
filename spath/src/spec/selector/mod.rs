@@ -19,15 +19,18 @@ pub mod index;
 pub mod name;
 pub mod slice;
 
+use std::fmt;
+
 use self::index::Index;
 use self::name::Name;
 use self::slice::Slice;
 use crate::spec::query::Queryable;
 use crate::spec::select_wildcard;
-use crate::{
-    ConcreteVariantArray, ConcreteVariantObject, LocatedNode, NormalizedPath, VariantValue,
-};
-use std::fmt;
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
+use crate::LocatedNode;
+use crate::NormalizedPath;
+use crate::VariantValue;
 
 /// An SPath selector
 #[derive(Debug, PartialEq, Eq, Clone)]
