@@ -14,13 +14,12 @@
 
 //! Types for representing [Normalized Paths] from RFC 9535.
 //!
-//! [Normalized Paths]: https://www.rfc-editor.org/rfc/rfc9535.html#name-normalized-paths
+//! [Normalized Paths]: https://datatracker.ietf.org/doc/html/rfc9535#name-normalized-paths
 
 use std::cmp::Ordering;
 use std::fmt;
 use std::slice::Iter;
 use std::slice::SliceIndex;
-use std::str::FromStr;
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct NormalizedPath<'a>(Vec<PathElement<'a>>);
@@ -89,7 +88,7 @@ impl fmt::Display for NormalizedPath<'_> {
     /// Format the [`NormalizedPath`] as a SPath string using the canonical bracket notation
     /// as per [RFC 9535][norm-paths]
     ///
-    /// [norm-paths]: https://www.rfc-editor.org/rfc/rfc9535.html#name-normalized-paths
+    /// [norm-paths]: https://datatracker.ietf.org/doc/html/rfc9535#name-normalized-paths
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "$")?;
         for elem in &self.0 {
@@ -187,7 +186,7 @@ impl fmt::Display for PathElement<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PathElement::Name(n) => {
-                // https://www.rfc-editor.org/rfc/rfc9535#section-2.7
+                // https://datatracker.ietf.org/doc/html/rfc9535#name-normalized-paths
                 for c in n.chars() {
                     match c {
                         '\u{0008}' => write!(f, r#"\b"#)?, // b BS backspace

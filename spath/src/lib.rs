@@ -16,9 +16,14 @@
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-pub mod node;
-pub mod path;
-pub mod value;
+mod node;
+pub use node::*;
+
+mod path;
+pub use path::*;
+
+mod value;
+pub use value::*;
 
 #[cfg(feature = "json")]
 mod json;

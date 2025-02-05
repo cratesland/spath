@@ -93,11 +93,19 @@ impl<'a, T: VariantValue> IntoIterator for NodeList<'a, T> {
 }
 
 /// A node within a variant value, along with its normalized path location.
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct LocatedNode<'a, T: VariantValue> {
     loc: NormalizedPath<'a>,
     node: &'a T,
 }
+
+impl<T: VariantValue> PartialEq for LocatedNode<'_, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.loc == other.loc
+    }
+}
+
+impl<T: VariantValue> Eq for LocatedNode<'_, T> {}
 
 impl<'a, T: VariantValue> LocatedNode<'a, T> {
     /// Create a new located node.
@@ -121,7 +129,7 @@ impl<'a, T: VariantValue> LocatedNode<'a, T> {
     }
 }
 
-/// A list of [`LocatedNode`] resulting from a SPath query.
+/// A list of [`LocatedNode`] resulting from a SPath query, along with their locations.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct LocatedNodeList<'a, T: VariantValue>(Vec<LocatedNode<'a, T>>);
 
@@ -199,7 +207,7 @@ impl<'a, T: VariantValue> LocatedNodeList<'a, T> {
     ///
     /// See also, [`dedup`][LocatedNodeList::dedup].
     pub fn dedup_in_place(&mut self) {
-        self.0.sort();
+        self.0.sort_unstable_by(|l, r| l.loc.cmp(&r.loc));
         self.0.dedup();
     }
 
