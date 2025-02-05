@@ -14,45 +14,59 @@
 
 //! Index selectors in SPath.
 
-use std::fmt;
-
-use crate::spec::integer::Integer;
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantArray;
 use crate::LocatedNode;
 use crate::NormalizedPath;
 use crate::VariantValue;
+use num_traits::ToPrimitive;
+use std::fmt;
 
+/// §2.3.3 Index Selector.
+///
 /// For selecting array elements by their index.
 ///
 /// Can use negative indices to index from the end of an array.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Index(pub Integer);
+pub struct Index {
+    /// The index of the selector.
+    index: i64,
+}
+
+impl Index {
+    /// Create a new index selector.
+    pub fn new(index: i64) -> Self {
+        Self { index }
+    }
+}
 
 impl fmt::Display for Index {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.index)
+    }
+}
+
+// §2.3.3.2. (Index Selector) Semantics
+fn resolve_index(index: i64, len: usize) -> Option<usize> {
+    let index = if index >= 0 {
+        index.to_usize()?
+    } else {
+        let index = len.to_i64().unwrap_or(i64::MAX) + index;
+        index.to_usize()?
+    };
+
+    if index < len {
+        Some(index)
+    } else {
+        None
     }
 }
 
 impl Queryable for Index {
     fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
         if let Some(list) = current.as_array() {
-            if self.0 < 0 {
-                let abs = self.0.abs();
-                usize::try_from(abs)
-                    .ok()
-                    .and_then(|i| list.len().checked_sub(i))
-                    .and_then(|i| list.get(i))
-                    .map(|v| vec![v])
-                    .unwrap_or_default()
-            } else {
-                usize::try_from(self.0)
-                    .ok()
-                    .and_then(|i| list.get(i))
-                    .map(|v| vec![v])
-                    .unwrap_or_default()
-            }
+            let index = resolve_index(self.index, list.len())?;
+            list.get(index).map(|v| vec![v]).unwrap_or_default()
         } else {
             vec![]
         }
@@ -65,17 +79,8 @@ impl Queryable for Index {
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         if let Some((index, node)) = current.as_array().and_then(|list| {
-            if self.0 < 0 {
-                let abs = self.0.abs();
-                usize::try_from(abs)
-                    .ok()
-                    .and_then(|i| list.len().checked_sub(i))
-                    .and_then(|i| list.get(i).map(|v| (i, v)))
-            } else {
-                usize::try_from(self.0)
-                    .ok()
-                    .and_then(|i| list.get(i).map(|v| (i, v)))
-            }
+            let index = resolve_index(self.index, list.len())?;
+            list.get(index).map(|node| (index, node))
         }) {
             parent.push(index);
             vec![LocatedNode::new(parent, node)]

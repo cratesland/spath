@@ -92,8 +92,8 @@ impl ConcreteVariantObject for Table {
         self.get(key)
     }
 
-    fn get_key_value(&self, _key: &str) -> Option<(&String, &Self::Value)> {
-        todo!("https://github.com/toml-rs/toml/pull/829")
+    fn get_key_value(&self, key: &str) -> Option<(&String, &Self::Value)> {
+        self.get_key_value(key)
     }
 
     fn iter(&self) -> impl Iterator<Item = (&String, &Self::Value)> {

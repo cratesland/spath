@@ -22,21 +22,34 @@ use crate::LocatedNode;
 use crate::NormalizedPath;
 use crate::VariantValue;
 
+/// §2.3.1 Name Selector.
+///
 /// Select a single variant object key.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Name(pub String);
+pub struct Name {
+    name: String,
+}
+
+impl Name {
+    /// Create a new name selector.
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
+}
 
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "'{name}'", name = self.0)
+        write!(f, "'{}'", self.name)
     }
 }
 
 impl Queryable for Name {
     fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
+        let name = self.name.as_str();
+
         current
             .as_object()
-            .and_then(|o| o.get(&self.0))
+            .and_then(|o| o.get(name))
             .map(|v| vec![v])
             .unwrap_or_default()
     }
@@ -47,19 +60,15 @@ impl Queryable for Name {
         _root: &'b T,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
+        let name = self.name.as_str();
+
         current
             .as_object()
-            .and_then(|o| o.get_key_value(&self.0))
+            .and_then(|o| o.get_key_value(name))
             .map(|(k, v)| {
                 parent.push(k);
                 vec![LocatedNode::new(parent, v)]
             })
             .unwrap_or_default()
-    }
-}
-
-impl From<&str> for Name {
-    fn from(s: &str) -> Self {
-        Self(s.to_owned())
     }
 }
