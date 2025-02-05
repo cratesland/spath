@@ -40,6 +40,11 @@ impl Index {
     pub fn new(index: i64) -> Self {
         Self { index }
     }
+
+    /// Get the index of the selector.
+    pub fn index(&self) -> i64 {
+        self.index
+    }
 }
 
 impl fmt::Display for Index {

@@ -23,6 +23,13 @@ pub mod query;
 pub mod segment;
 pub mod selector;
 
+/// §2.3.2.2 (Wildcard Selector) Semantics
+///
+/// A wildcard selector selects the nodes of all children of an object or array.
+///
+/// Note that the children of an object are its member values, not its member names.
+///
+/// The wildcard selector selects nothing from a primitive variant value.
 fn select_wildcard<'b, T: VariantValue>(result: &mut Vec<&'b T>, current: &'b T) {
     if let Some(list) = current.as_array() {
         for v in list.iter() {

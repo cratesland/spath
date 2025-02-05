@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Types representing queries in JSONPath
+//! Types representing queries in SPath
 
 use std::fmt;
 
@@ -25,6 +25,7 @@ mod sealed {
     use super::Query;
     use crate::spec::segment::QuerySegment;
     use crate::spec::segment::Segment;
+    use crate::spec::selector::filter::Filter;
     use crate::spec::selector::index::Index;
     use crate::spec::selector::name::Name;
     use crate::spec::selector::slice::Slice;
@@ -38,6 +39,7 @@ mod sealed {
     impl Sealed for Name {}
     impl Sealed for Selector {}
     impl Sealed for Index {}
+    impl Sealed for Filter {}
 }
 
 /// A trait that can query a variant value.
@@ -54,7 +56,7 @@ pub trait Queryable: sealed::Sealed {
     ) -> Vec<LocatedNode<'b, T>>;
 }
 
-/// Represents a JSONPath expression
+/// Represents a SPath expression
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct Query {
     /// The kind of query, root (`$`), or current (`@`)
@@ -63,20 +65,19 @@ pub struct Query {
     pub segments: Vec<QuerySegment>,
 }
 
-// TODO(tisonkun): for filter functions
-// impl Query {
-//     pub(crate) fn is_singular(&self) -> bool {
-//         for s in &self.segments {
-//             if s.is_descendent() {
-//                 return false;
-//             }
-//             if !s.segment.is_singular() {
-//                 return false;
-//             }
-//         }
-//         true
-//     }
-// }
+impl Query {
+    pub(crate) fn is_singular(&self) -> bool {
+        for s in &self.segments {
+            if s.is_descendent() {
+                return false;
+            }
+            if !s.segment.is_singular() {
+                return false;
+            }
+        }
+        true
+    }
+}
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -94,10 +95,10 @@ impl fmt::Display for Query {
 /// The kind of query
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum QueryKind {
-    /// A query against the root of a JSON object, i.e., with `$`
+    /// A query against the root of a variant object, i.e., with `$`
     #[default]
     Root,
-    /// A query against the current node within a JSON object, i.e., with `@`
+    /// A query against the current node within a variant object, i.e., with `@`
     Current,
 }
 

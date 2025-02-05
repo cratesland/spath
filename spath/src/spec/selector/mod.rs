@@ -26,6 +26,7 @@ use self::name::Name;
 use self::slice::Slice;
 use crate::spec::query::Queryable;
 use crate::spec::select_wildcard;
+use crate::spec::selector::filter::Filter;
 use crate::ConcreteVariantArray;
 use crate::ConcreteVariantObject;
 use crate::LocatedNode;
@@ -46,8 +47,8 @@ pub enum Selector {
     Index(Index),
     /// Select a slice from an array
     ArraySlice(Slice),
-    // Use a filter to select nodes
-    // Filter(Filter),
+    /// Use a filter to select nodes
+    Filter(Filter),
 }
 
 impl Selector {
@@ -64,7 +65,7 @@ impl fmt::Display for Selector {
             Selector::Wildcard => write!(f, "*"),
             Selector::Index(index) => write!(f, "{index}"),
             Selector::ArraySlice(slice) => write!(f, "{slice}"),
-            // Selector::Filter(filter) => write!(f, "?{filter}"),
+            Selector::Filter(filter) => write!(f, "?{filter}"),
         }
     }
 }
@@ -77,7 +78,7 @@ impl Queryable for Selector {
             Selector::Wildcard => select_wildcard(&mut result, current),
             Selector::Index(index) => result.append(&mut index.query(current, root)),
             Selector::ArraySlice(slice) => result.append(&mut slice.query(current, root)),
-            // Selector::Filter(filter) => query.append(&mut filter.query(current, root)),
+            Selector::Filter(filter) => result.append(&mut filter.query(current, root)),
         }
         result
     }
@@ -106,7 +107,7 @@ impl Queryable for Selector {
             }
             Selector::Index(index) => index.query_located(current, root, parent),
             Selector::ArraySlice(slice) => slice.query_located(current, root, parent),
-            // Selector::Filter(filter) => filter.query_located(current, root, parent),
+            Selector::Filter(filter) => filter.query_located(current, root, parent),
         }
     }
 }
