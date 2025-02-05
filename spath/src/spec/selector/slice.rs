@@ -14,15 +14,18 @@
 
 //! Slice selectors for selecting array slices in SPath.
 
-use crate::spec::integer::Integer;
+use std::cmp::max;
+use std::cmp::min;
+use std::cmp::Ordering;
+
+use num_traits::ToPrimitive;
+
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantArray;
 use crate::LocatedNode;
 use crate::NormalizedPath;
 use crate::VariantValue;
 
-/// Array slice selector.
-///
 /// §2.3.4 Array Slice Selector.
 ///
 /// Default Array Slice start and end Values:
@@ -33,20 +36,20 @@ use crate::VariantValue;
 /// | step < 0  | len - 1   | -len - 1|
 #[derive(Debug, PartialEq, Eq, Default, Clone, Copy)]
 pub struct Slice {
-    /// The start of the slice.
+    /// The start of the slice, inclusive.
     ///
     /// This can be negative to start the slice from a position relative to the end of the array
     /// being sliced.
-    start: Option<Integer>,
-    /// The end of the slice.
+    start: Option<i64>,
+    /// The end of the slice, exclusive.
     ///
     /// This can be negative to end the slice at a position relative to the end of the array being
     /// sliced.
-    end: Option<Integer>,
-    /// The step slice for the slice.
+    end: Option<i64>,
+    /// The step slice for the slice. Default to 1.
     ///
     /// This can be negative to step in reverse order.
-    step: Option<Integer>,
+    step: Option<i64>,
 }
 
 impl std::fmt::Display for Slice {
@@ -66,130 +69,101 @@ impl std::fmt::Display for Slice {
     }
 }
 
-// these methods are either for internal use or test purposes
-#[doc(hidden)]
-impl Slice {
-    /// Create a new slice selector.
-    pub fn new() -> Self {
-        Self::default()
+// §2.3.4.2.2. (Array Slice Selector) Normative Semantics
+fn bounds(start: i64, end: i64, step: i64, len: i64) -> (i64, i64) {
+    fn normalize(i: i64, len: i64) -> i64 {
+        if i < 0 {
+            len + i
+        } else {
+            i
+        }
     }
 
-    /// Set the slice `start`.
-    ///
-    /// # Panics
-    ///
-    /// This will panic if the provided value is outside the range `[-(2^53) + 1, (2^53) - 1]`.
-    pub fn with_start(mut self, start: i64) -> Self {
-        self.start = Some(Integer::from_i64_unchecked(start));
-        self
-    }
+    let start = normalize(start, len);
+    let end = normalize(end, len);
 
-    /// Set the slice `end`.
-    ///
-    /// # Panics
-    ///
-    /// This will panic if the provided value is outside the range `[-(2^53) + 1, (2^53) - 1]`.
-    pub fn with_end(mut self, end: i64) -> Self {
-        self.end = Some(Integer::from_i64_unchecked(end));
-        self
-    }
-
-    /// Set the slice `step`.
-    ///
-    /// # Panics
-    ///
-    /// This will panic if the provided value is outside the range `[-(2^53) + 1, (2^53) - 1]`.
-    pub fn with_step(mut self, step: i64) -> Self {
-        self.step = Some(Integer::from_i64_unchecked(step));
-        self
-    }
-
-    #[inline]
-    fn bounds_on_forward_slice(&self, len: Integer) -> (Integer, Integer) {
-        let start_default = self.start.unwrap_or(Integer::ZERO);
-        let end_default = self.end.unwrap_or(len);
-        let start = normalize_slice_index(start_default, len)
-            .unwrap_or(Integer::ZERO)
-            .max(Integer::ZERO);
-        let end = normalize_slice_index(end_default, len)
-            .unwrap_or(Integer::ZERO)
-            .max(Integer::ZERO);
-        let lower = start.min(len);
-        let upper = end.min(len);
+    if step >= 0 {
+        let lower = min(max(start, 0), len);
+        let upper = min(max(end, 0), len);
+        (lower, upper)
+    } else {
+        let upper = min(max(start, -1), len - 1);
+        let lower = min(max(end, -1), len - 1);
         (lower, upper)
     }
+}
 
-    #[inline]
-    fn bounds_on_reverse_slice(&self, len: Integer) -> Option<(Integer, Integer)> {
-        let start_default = self
-            .start
-            .or_else(|| len.checked_sub(Integer::from_i64_unchecked(1)))?;
-        let end_default = self.end.or_else(|| {
-            let l = len.checked_mul(Integer::from_i64_unchecked(-1))?;
-            l.checked_sub(Integer::from_i64_unchecked(1))
-        })?;
-        let start = normalize_slice_index(start_default, len)
-            .unwrap_or(Integer::ZERO)
-            .max(Integer::from_i64_unchecked(-1));
-        let end = normalize_slice_index(end_default, len)
-            .unwrap_or(Integer::ZERO)
-            .max(Integer::from_i64_unchecked(-1));
-        let lower = end.min(
-            len.checked_sub(Integer::from_i64_unchecked(1))
-                .unwrap_or(len),
-        );
-        let upper = start.min(
-            len.checked_sub(Integer::from_i64_unchecked(1))
-                .unwrap_or(len),
-        );
-        Some((lower, upper))
+impl Slice {
+    /// Create a new slice selector.
+    pub fn new(start: Option<i64>, end: Option<i64>, step: Option<i64>) -> Self {
+        Self { start, end, step }
+    }
+
+    fn select<'b, T, N, F>(&self, current: &'b T, make_node: F) -> Vec<N>
+    where
+        T: VariantValue,
+        N: 'b,
+        F: Fn(usize, &'b T) -> N,
+    {
+        let vec = match current.as_array() {
+            Some(vec) => vec,
+            None => return vec![],
+        };
+
+        let (start, end, step) = (self.start, self.end, self.step.unwrap_or(1));
+        if step == 0 {
+            // §2.3.4.2.2. Normative Semantics
+            // When step = 0, no elements are selected, and the result array is empty.
+            return vec![];
+        }
+
+        let len = vec.len().to_i64().unwrap_or(i64::MAX);
+        let (start, end) = if step >= 0 {
+            match (start, end) {
+                (Some(start), Some(end)) => (start, end),
+                (Some(start), None) => (start, len),
+                (None, Some(end)) => (0, end),
+                (None, None) => (0, len),
+            }
+        } else {
+            match (start, end) {
+                (Some(start), Some(end)) => (start, end),
+                (Some(start), None) => (start, -len - 1),
+                (None, Some(end)) => (len - 1, end),
+                (None, None) => (len - 1, -len - 1),
+            }
+        };
+
+        let (lower, upper) = bounds(start, end, step, len);
+        let mut selected = vec![];
+        match step.cmp(&0) {
+            Ordering::Greater => {
+                // step > 0
+                let mut i = lower;
+                while i < upper {
+                    let node = vec.get(i as usize).unwrap();
+                    selected.push(make_node(i as usize, node));
+                    i += step;
+                }
+            }
+            Ordering::Less => {
+                // step < 0
+                let mut i = upper;
+                while lower < i {
+                    let node = vec.get(i as usize).unwrap();
+                    selected.push(make_node(i as usize, node));
+                    i += step;
+                }
+            }
+            Ordering::Equal => unreachable!("step is guaranteed not zero here"),
+        }
+        selected
     }
 }
 
 impl Queryable for Slice {
     fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
-        if let Some(list) = current.as_array() {
-            let mut result = Vec::new();
-            let step = self.step.unwrap_or(Integer::from_i64_unchecked(1));
-            if step == 0 {
-                return vec![];
-            }
-            let Ok(len) = Integer::try_from(list.len()) else {
-                return vec![];
-            };
-            if step > 0 {
-                let (lower, upper) = self.bounds_on_forward_slice(len);
-                let mut i = lower;
-                while i < upper {
-                    if let Some(v) = usize::try_from(i).ok().and_then(|i| list.get(i)) {
-                        result.push(v);
-                    }
-                    i = if let Some(i) = i.checked_add(step) {
-                        i
-                    } else {
-                        break;
-                    };
-                }
-            } else {
-                let Some((lower, upper)) = self.bounds_on_reverse_slice(len) else {
-                    return vec![];
-                };
-                let mut i = upper;
-                while lower < i {
-                    if let Some(v) = usize::try_from(i).ok().and_then(|i| list.get(i)) {
-                        result.push(v);
-                    }
-                    i = if let Some(i) = i.checked_add(step) {
-                        i
-                    } else {
-                        break;
-                    };
-                }
-            }
-            result
-        } else {
-            vec![]
-        }
+        self.select(current, |_, node| node)
     }
 
     fn query_located<'b, T: VariantValue>(
@@ -198,61 +172,8 @@ impl Queryable for Slice {
         _root: &'b T,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
-        if let Some(list) = current.as_array() {
-            let mut result = Vec::new();
-            let step = self.step.unwrap_or(Integer::from_i64_unchecked(1));
-            if step == 0 {
-                return vec![];
-            }
-            let Ok(len) = Integer::try_from(list.len()) else {
-                return vec![];
-            };
-            if step > 0 {
-                let (lower, upper) = self.bounds_on_forward_slice(len);
-                let mut i = lower;
-                while i < upper {
-                    if let Some((i, node)) = usize::try_from(i)
-                        .ok()
-                        .and_then(|i| list.get(i).map(|v| (i, v)))
-                    {
-                        result.push(LocatedNode::new(parent.clone_and_push(i), node));
-                    }
-                    i = if let Some(i) = i.checked_add(step) {
-                        i
-                    } else {
-                        break;
-                    };
-                }
-            } else {
-                let Some((lower, upper)) = self.bounds_on_reverse_slice(len) else {
-                    return vec![];
-                };
-                let mut i = upper;
-                while lower < i {
-                    if let Some((i, node)) = usize::try_from(i)
-                        .ok()
-                        .and_then(|i| list.get(i).map(|v| (i, v)))
-                    {
-                        result.push(LocatedNode::new(parent.clone_and_push(i), node));
-                    }
-                    i = if let Some(i) = i.checked_add(step) {
-                        i
-                    } else {
-                        break;
-                    };
-                }
-            }
-            result
-        } else {
-            vec![]
-        }
-    }
-}
-
-fn normalize_slice_index(index: Integer, len: Integer) -> Option<Integer> {
-    if index >= 0 {
-        Some(index)
-    } else {
-        len.checked_sub(index.abs())
+        self.select(current, |i, node| {
+            LocatedNode::new(parent.clone_and_push(i), node)
+        })
     }
 }

@@ -14,13 +14,15 @@
 
 //! Index selectors in SPath.
 
+use std::fmt;
+
+use num_traits::ToPrimitive;
+
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantArray;
 use crate::LocatedNode;
 use crate::NormalizedPath;
 use crate::VariantValue;
-use num_traits::ToPrimitive;
-use std::fmt;
 
 /// §2.3.3 Index Selector.
 ///
@@ -64,12 +66,14 @@ fn resolve_index(index: i64, len: usize) -> Option<usize> {
 
 impl Queryable for Index {
     fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
-        if let Some(list) = current.as_array() {
-            let index = resolve_index(self.index, list.len())?;
-            list.get(index).map(|v| vec![v]).unwrap_or_default()
-        } else {
-            vec![]
-        }
+        current
+            .as_array()
+            .and_then(|list| {
+                let index = resolve_index(self.index, list.len())?;
+                list.get(index)
+            })
+            .map(|node| vec![node])
+            .unwrap_or_default()
     }
 
     fn query_located<'b, T: VariantValue>(
@@ -78,14 +82,16 @@ impl Queryable for Index {
         _root: &'b T,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
-        if let Some((index, node)) = current.as_array().and_then(|list| {
-            let index = resolve_index(self.index, list.len())?;
-            list.get(index).map(|node| (index, node))
-        }) {
-            parent.push(index);
-            vec![LocatedNode::new(parent, node)]
-        } else {
-            vec![]
-        }
+        current
+            .as_array()
+            .and_then(|list| {
+                let index = resolve_index(self.index, list.len())?;
+                list.get(index).map(|node| (index, node))
+            })
+            .map(|(i, node)| {
+                parent.push(i);
+                vec![LocatedNode::new(parent, node)]
+            })
+            .unwrap_or_default()
     }
 }
