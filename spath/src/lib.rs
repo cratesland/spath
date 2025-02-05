@@ -29,5 +29,10 @@ pub use value::*;
 
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "json")]
+pub use json::JsonValueOps;
+
 #[cfg(feature = "toml")]
 mod toml;
+#[cfg(feature = "toml")]
+pub use toml::TomlValueOps;

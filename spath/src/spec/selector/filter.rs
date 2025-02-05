@@ -14,6 +14,8 @@
 
 //! Types representing filter selectors in SPath.
 
+use super::{index::Index, name::Name, Selector};
+use crate::spec::functions::SPathValue;
 use crate::{
     node::LocatedNode,
     path::NormalizedPath,
@@ -23,8 +25,6 @@ use crate::{
     },
     ConcreteVariantArray, ConcreteVariantObject, VariantValue,
 };
-
-use super::{index::Index, name::Name, Selector};
 
 mod sealed {
     use super::{BasicExpr, ComparisonExpr, ExistExpr, LogicalAndExpr, LogicalOrExpr};
@@ -217,22 +217,24 @@ pub struct ComparisonExpr {
     pub right: Comparable,
 }
 
-fn check_equal_to(left: &JsonPathValue, right: &JsonPathValue) -> bool {
+fn check_equal_to<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) -> bool {
     match (left, right) {
-        (JsonPathValue::Node(v1), JsonPathValue::Node(v2)) => value_equal_to(v1, v2),
-        (JsonPathValue::Node(v1), JsonPathValue::Value(v2)) => value_equal_to(v1, v2),
-        (JsonPathValue::Value(v1), JsonPathValue::Node(v2)) => value_equal_to(v1, v2),
-        (JsonPathValue::Value(v1), JsonPathValue::Value(v2)) => value_equal_to(v1, v2),
-        (JsonPathValue::Nothing, JsonPathValue::Nothing) => true,
+        (SPathValue::Node(v1), SPathValue::Node(v2)) => value_equal_to(*v1, *v2),
+        (SPathValue::Node(v1), SPathValue::Value(v2)) => value_equal_to(*v1, v2),
+        (SPathValue::Value(v1), SPathValue::Node(v2)) => value_equal_to(v1, *v2),
+        (SPathValue::Value(v1), SPathValue::Value(v2)) => value_equal_to(v1, v2),
+        (SPathValue::Nothing, SPathValue::Nothing) => true,
         _ => false,
     }
 }
 
-fn value_equal_to(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(l), Value::Number(r)) => number_equal_to(l, r),
-        _ => left == right,
-    }
+fn value_equal_to<T: VariantValue>(left: &T, right: &T) -> bool {
+    let _ = (left, right);
+    todo!("implement value_equal_to")
+    // match (left, right) {
+    //     (Value::Number(l), Value::Number(r)) => number_equal_to(l, r),
+    //     _ => left == right,
+    // }
 }
 
 fn number_equal_to(left: &Number, right: &Number) -> bool {
@@ -255,12 +257,12 @@ fn value_less_than(left: &Value, right: &Value) -> bool {
     }
 }
 
-fn check_less_than(left: &JsonPathValue, right: &JsonPathValue) -> bool {
+fn check_less_than<T: VariantValue>(left: &SPathValue, right: &SPathValue) -> bool {
     match (left, right) {
-        (JsonPathValue::Node(v1), JsonPathValue::Node(v2)) => value_less_than(v1, v2),
-        (JsonPathValue::Node(v1), JsonPathValue::Value(v2)) => value_less_than(v1, v2),
-        (JsonPathValue::Value(v1), JsonPathValue::Node(v2)) => value_less_than(v1, v2),
-        (JsonPathValue::Value(v1), JsonPathValue::Value(v2)) => value_less_than(v1, v2),
+        (SPathValue::Node(v1), SPathValue::Node(v2)) => value_less_than(v1, v2),
+        (SPathValue::Node(v1), SPathValue::Value(v2)) => value_less_than(v1, v2),
+        (SPathValue::Value(v1), SPathValue::Node(v2)) => value_less_than(v1, v2),
+        (SPathValue::Value(v1), SPathValue::Value(v2)) => value_less_than(v1, v2),
         _ => false,
     }
 }
@@ -274,12 +276,12 @@ fn value_same_type(left: &Value, right: &Value) -> bool {
         | matches!((left, right), (Value::Object(_), Value::Object(_)))
 }
 
-fn check_same_type(left: &JsonPathValue, right: &JsonPathValue) -> bool {
+fn check_same_type(left: &SPathValue, right: &SPathValue) -> bool {
     match (left, right) {
-        (JsonPathValue::Node(v1), JsonPathValue::Node(v2)) => value_same_type(v1, v2),
-        (JsonPathValue::Node(v1), JsonPathValue::Value(v2)) => value_same_type(v1, v2),
-        (JsonPathValue::Value(v1), JsonPathValue::Node(v2)) => value_same_type(v1, v2),
-        (JsonPathValue::Value(v1), JsonPathValue::Value(v2)) => value_same_type(v1, v2),
+        (SPathValue::Node(v1), SPathValue::Node(v2)) => value_same_type(v1, v2),
+        (SPathValue::Node(v1), SPathValue::Value(v2)) => value_same_type(v1, v2),
+        (SPathValue::Value(v1), SPathValue::Node(v2)) => value_same_type(v1, v2),
+        (SPathValue::Value(v1), SPathValue::Value(v2)) => value_same_type(v1, v2),
         _ => false,
     }
 }
@@ -373,8 +375,6 @@ pub enum Comparable {
     ///
     /// This will only produce a single node, i.e., JSON value, or nothing
     SingularQuery(SingularQuery),
-    /// A function expression that can only produce a `ValueType`
-    FunctionExpr(FunctionExpr<Validated>),
 }
 
 impl std::fmt::Display for Comparable {
@@ -382,25 +382,23 @@ impl std::fmt::Display for Comparable {
         match self {
             Comparable::Literal(lit) => write!(f, "{lit}"),
             Comparable::SingularQuery(path) => write!(f, "{path}"),
-            Comparable::FunctionExpr(expr) => write!(f, "{expr}"),
         }
     }
 }
 
 impl Comparable {
     #[doc(hidden)]
-    pub fn as_value<'a, 'b: 'a>(
+    pub fn as_value<'a, 'b: 'a, T: VariantValue>(
         &'a self,
-        current: &'b Value,
-        root: &'b Value,
-    ) -> JsonPathValue<'a> {
+        current: &'b T,
+        root: &'b T,
+    ) -> SPathValue<'a, T> {
         match self {
             Comparable::Literal(lit) => lit.into(),
             Comparable::SingularQuery(sp) => match sp.eval_query(current, root) {
-                Some(v) => JsonPathValue::Node(v),
-                None => JsonPathValue::Nothing,
+                Some(v) => SPathValue::Node(v),
+                None => SPathValue::Nothing,
             },
-            Comparable::FunctionExpr(expr) => expr.evaluate(current, root),
         }
     }
 
@@ -426,15 +424,15 @@ pub enum Literal {
     Null,
 }
 
-impl<'a> From<&'a Literal> for JsonPathValue<'a> {
+impl<'a> From<&'a Literal> for SPathValue<'a> {
     fn from(value: &'a Literal) -> Self {
         match value {
             // Cloning here seems cheap, certainly for numbers, but it may not be desirable for
             // strings.
-            Literal::Number(n) => JsonPathValue::Value(n.to_owned().into()),
-            Literal::String(s) => JsonPathValue::Value(s.to_owned().into()),
-            Literal::Bool(b) => JsonPathValue::Value(Value::from(*b)),
-            Literal::Null => JsonPathValue::Value(Value::Null),
+            Literal::Number(n) => SPathValue::Value(n.to_owned().into()),
+            Literal::String(s) => SPathValue::Value(s.to_owned().into()),
+            Literal::Bool(b) => SPathValue::Value(Value::from(*b)),
+            Literal::Null => SPathValue::Value(Value::Null),
         }
     }
 }

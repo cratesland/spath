@@ -12,16 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use toml::Table;
-use toml::Value;
-
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
+use crate::{ConcreteVariantOps, Literal};
+use num_traits::ToPrimitive;
+use toml::Table;
+use toml::Value;
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Table;
+    type VariantOps = TomlValueOps;
+
+    fn ops() -> Self::VariantOps {
+        TomlValueOps
+    }
 
     fn is_null(&self) -> bool {
         // toml 1.0 does not have null
@@ -102,5 +108,23 @@ impl ConcreteVariantObject for Table {
 
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
         self.values()
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct TomlValueOps;
+
+impl ConcreteVariantOps for TomlValueOps {
+    type Value = Value;
+
+    fn from_literal(literal: Literal) -> Option<Self::Value> {
+        match literal {
+            Literal::Int(v) => Some(Value::Integer(v)),
+            Literal::UInt(v) => v.to_i64().map(Value::Integer),
+            Literal::Float(v) => Some(Value::Float(v)),
+            Literal::String(v) => Some(Value::String(v)),
+            Literal::Bool(v) => Some(Value::Boolean(v)),
+            Literal::Null => None,
+        }
     }
 }

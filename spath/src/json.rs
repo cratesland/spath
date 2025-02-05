@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde_json::Map;
-use serde_json::Value;
-
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
+use crate::{ConcreteVariantOps, Literal};
+use serde_json::Value;
+use serde_json::{Map, Number};
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Map<String, Value>;
+    type VariantOps = JsonValueOps;
+
+    fn ops() -> Self::VariantOps {
+        JsonValueOps
+    }
 
     fn is_null(&self) -> bool {
         self.is_null()
@@ -97,5 +102,23 @@ impl ConcreteVariantObject for Map<String, Value> {
 
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
         self.values()
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct JsonValueOps;
+
+impl ConcreteVariantOps for JsonValueOps {
+    type Value = Value;
+
+    fn from_literal(literal: Literal) -> Option<Self::Value> {
+        match literal {
+            Literal::Int(v) => Some(Value::Number(v.into())),
+            Literal::UInt(v) => Some(Value::Number(v.into())),
+            Literal::Float(v) => Number::from_f64(v).map(Value::Number),
+            Literal::String(v) => Some(Value::String(v)),
+            Literal::Bool(b) => Some(Value::Bool(b)),
+            Literal::Null => Some(Value::Null),
+        }
     }
 }

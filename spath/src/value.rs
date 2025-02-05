@@ -12,7 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Public traits for variant (semi-structured) data values.
+//! Public structs and traits for variant (semi-structured) data values.
+
+/// A literal variant value that can be represented in a SPath query
+#[derive(Debug, Clone)]
+pub enum Literal {
+    /// 64-bit integer.
+    Int(i64),
+    /// Unsigned 64-bit integer.
+    UInt(u64),
+    /// 64-bit floating point number.
+    Float(f64),
+    /// UTF-8 string.
+    String(String),
+    /// `true` or `false`.
+    Bool(bool),
+    /// `null`.
+    Null,
+}
 
 /// A trait for any variant value.
 pub trait VariantValue: Clone {
@@ -20,6 +37,10 @@ pub trait VariantValue: Clone {
     type VariantArray: ConcreteVariantArray<Value = Self>;
     /// The type of the object variant.
     type VariantObject: ConcreteVariantObject<Value = Self>;
+    /// The type of operations over variant values.
+    type VariantOps: ConcreteVariantOps<Value = Self>;
+    /// Return the operations over variant values.
+    fn ops() -> Self::VariantOps;
     /// Whether the value is a null.
     fn is_null(&self) -> bool;
     /// Whether the value is a boolean.
@@ -66,4 +87,12 @@ pub trait ConcreteVariantObject {
     fn iter(&self) -> impl Iterator<Item = (&String, &Self::Value)>;
     /// An iterator over the values in the object.
     fn values(&self) -> impl Iterator<Item = &Self::Value>;
+}
+
+/// A trait for the concrete variant operations associated with a variant value.
+pub trait ConcreteVariantOps {
+    /// The type of the value to manipulate.
+    type Value: VariantValue<VariantOps = Self>;
+    /// Create a new value from a literal.
+    fn from_literal(literal: Literal) -> Option<Self::Value>;
 }
