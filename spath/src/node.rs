@@ -199,10 +199,7 @@ impl<'a, T: VariantValue> LocatedNodeList<'a, T> {
     ///
     /// See also, [`dedup`][LocatedNodeList::dedup].
     pub fn dedup_in_place(&mut self) {
-        // This unwrap should be safe, since the paths corresponding to
-        // a query against a Value will always be ordered.
-        self.0
-            .sort_unstable_by(|a, b| a.loc.partial_cmp(&b.loc).unwrap());
+        self.0.sort();
         self.0.dedup();
     }
 

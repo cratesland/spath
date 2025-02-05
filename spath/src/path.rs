@@ -22,7 +22,7 @@ use std::slice::Iter;
 use std::slice::SliceIndex;
 use std::str::FromStr;
 
-#[derive(Debug, Default, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Debug, Default, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct NormalizedPath<'a>(Vec<PathElement<'a>>);
 
 impl<'a> NormalizedPath<'a> {
@@ -141,10 +141,17 @@ impl PathElement<'_> {
 
 impl PartialOrd for PathElement<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PathElement<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (PathElement::Name(a), PathElement::Name(b)) => a.partial_cmp(b),
-            (PathElement::Index(a), PathElement::Index(b)) => a.partial_cmp(b),
-            _ => None,
+            (PathElement::Name(a), PathElement::Name(b)) => a.cmp(b),
+            (PathElement::Index(a), PathElement::Index(b)) => a.cmp(b),
+            (PathElement::Name(_), PathElement::Index(_)) => Ordering::Greater,
+            (PathElement::Index(_), PathElement::Name(_)) => Ordering::Less,
         }
     }
 }
