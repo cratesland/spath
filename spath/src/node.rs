@@ -149,6 +149,11 @@ impl<'a, T: VariantValue> LocatedNode<'a, T> {
 pub struct LocatedNodeList<'a, T: VariantValue>(Vec<LocatedNode<'a, T>>);
 
 impl<'a, T: VariantValue> LocatedNodeList<'a, T> {
+    /// Create a new [`LocatedNodeList`] from a vector of located nodes.
+    pub fn new(nodes: Vec<LocatedNode<'a, T>>) -> Self {
+        Self(nodes)
+    }
+
     /// Extract *at most* one entry from a [`LocatedNodeList`]
     ///
     /// This is intended for queries that are expected to optionally yield a single node.

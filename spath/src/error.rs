@@ -12,28 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # SPath: Query expressions for semi-structured data
-
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
-
-mod error;
-pub use error::*;
-
-mod node;
-pub use node::*;
-
-mod path;
-pub use path::*;
-
-mod spath;
-pub use spath::*;
-
-pub mod spec;
-
-mod value;
-pub use value::*;
-
-#[cfg(feature = "json")]
-mod json;
-#[cfg(feature = "toml")]
-mod toml;
+/// Error type for SPath query string parsing errors
+#[derive(Debug, thiserror::Error)]
+#[error("{err}")]
+pub struct ParseError {
+    err: String,
+}
