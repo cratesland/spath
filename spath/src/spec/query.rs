@@ -19,6 +19,7 @@ use std::fmt;
 use super::segment::QuerySegment;
 use crate::node::LocatedNode;
 use crate::path::NormalizedPath;
+use crate::spec::functions::FunctionRegistry;
 use crate::VariantValue;
 
 mod sealed {
@@ -45,13 +46,19 @@ mod sealed {
 /// A trait that can query a variant value.
 pub trait Queryable: sealed::Sealed {
     /// Run the query over a `current` node with a `root` node.
-    fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T>;
-
-    /// Run the query over a `current` node with a `root` node and a `parent` path.
-    fn query_located<'b, T: VariantValue>(
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
+    ) -> Vec<&'b T>;
+
+    /// Run the query over a `current` node with a `root` node and a `parent` path.
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>>;
 }
@@ -103,7 +110,12 @@ pub enum QueryKind {
 }
 
 impl Queryable for Query {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> Vec<&'b T> {
         let mut result = match self.kind {
             QueryKind::Root => vec![root],
             QueryKind::Current => vec![current],
@@ -111,17 +123,18 @@ impl Queryable for Query {
         for segment in &self.segments {
             let mut r = Vec::new();
             for node in result {
-                r.append(&mut segment.query(node, root));
+                r.append(&mut segment.query(node, root, registry));
             }
             result = r;
         }
         result
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         let mut result = match self.kind {
@@ -133,7 +146,7 @@ impl Queryable for Query {
             for n in result {
                 let loc = n.location();
                 let node = n.node();
-                r.append(&mut s.query_located(node, root, loc.clone()));
+                r.append(&mut s.query_located(node, root, registry, loc.clone()));
             }
             result = r;
         }

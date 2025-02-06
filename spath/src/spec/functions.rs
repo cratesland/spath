@@ -281,7 +281,7 @@ pub trait FunctionRegistry {
 }
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionExpr {
     pub name: String,
     pub args: Vec<FunctionExprArg>,
@@ -332,7 +332,7 @@ impl fmt::Display for FunctionExpr {
 }
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FunctionExprArg {
     Literal(Literal),
     SingularQuery(SingularQuery),
@@ -370,10 +370,10 @@ impl FunctionExprArg {
                 None => SPathValue::Nothing,
             },
             FunctionExprArg::FilterQuery(q) => {
-                let nodes = q.query(current, root);
+                let nodes = q.query(current, root, registry);
                 SPathValue::Nodes(NodeList::new(nodes))
             }
-            FunctionExprArg::LogicalExpr(l) => match l.test_filter(current, root) {
+            FunctionExprArg::LogicalExpr(l) => match l.test_filter(current, root, registry) {
                 true => SPathValue::Logical(LogicalType::True),
                 false => SPathValue::Logical(LogicalType::False),
             },

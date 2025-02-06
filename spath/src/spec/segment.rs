@@ -14,6 +14,7 @@
 
 use std::fmt;
 
+use crate::spec::functions::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::spec::select_wildcard;
 use crate::spec::selector::Selector;
@@ -54,58 +55,72 @@ impl fmt::Display for QuerySegment {
 }
 
 impl Queryable for QuerySegment {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
-        let mut query = self.segment.query(current, root);
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> Vec<&'b T> {
+        let mut query = self.segment.query(current, root, registry);
         if matches!(self.kind, QuerySegmentKind::Descendant) {
-            query.append(&mut descend(self, current, root));
+            query.append(&mut descend(self, current, root, registry));
         }
         query
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         if matches!(self.kind, QuerySegmentKind::Descendant) {
-            let mut result = self.segment.query_located(current, root, parent.clone());
-            result.append(&mut descend_paths(self, current, root, parent));
+            let mut result = self
+                .segment
+                .query_located(current, root, registry, parent.clone());
+            result.append(&mut descend_paths(self, current, root, registry, parent));
             result
         } else {
-            self.segment.query_located(current, root, parent)
+            self.segment.query_located(current, root, registry, parent)
         }
     }
 }
 
-fn descend<'b, T: VariantValue>(segment: &QuerySegment, current: &'b T, root: &'b T) -> Vec<&'b T> {
+fn descend<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    segment: &QuerySegment,
+    current: &'b T,
+    root: &'b T,
+    registry: &R,
+) -> Vec<&'b T> {
     let mut query = Vec::new();
     if let Some(list) = current.as_array() {
         for v in list.iter() {
-            query.append(&mut segment.query(v, root));
+            query.append(&mut segment.query(v, root, registry));
         }
     } else if let Some(obj) = current.as_object() {
         for v in obj.values() {
-            query.append(&mut segment.query(v, root));
+            query.append(&mut segment.query(v, root, registry));
         }
     }
     query
 }
 
-fn descend_paths<'b, T: VariantValue>(
+fn descend_paths<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
     segment: &QuerySegment,
     current: &'b T,
     root: &'b T,
+    registry: &R,
     parent: NormalizedPath<'b>,
 ) -> Vec<LocatedNode<'b, T>> {
     let mut result = Vec::new();
     if let Some(list) = current.as_array() {
         for (i, v) in list.iter().enumerate() {
-            result.append(&mut segment.query_located(v, root, parent.clone_and_push(i)));
+            result.append(&mut segment.query_located(v, root, registry, parent.clone_and_push(i)));
         }
     } else if let Some(obj) = current.as_object() {
         for (k, v) in obj.iter() {
-            result.append(&mut segment.query_located(v, root, parent.clone_and_push(k)));
+            result.append(&mut segment.query_located(v, root, registry, parent.clone_and_push(k)));
         }
     }
     result
@@ -196,12 +211,17 @@ impl fmt::Display for Segment {
 }
 
 impl Queryable for Segment {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> Vec<&'b T> {
         let mut result = Vec::new();
         match self {
             Segment::LongHand(selectors) => {
                 for selector in selectors {
-                    result.append(&mut selector.query(current, root));
+                    result.append(&mut selector.query(current, root, registry));
                 }
             }
             Segment::DotName(key) => {
@@ -216,17 +236,18 @@ impl Queryable for Segment {
         result
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         let mut result = vec![];
         match self {
             Segment::LongHand(selectors) => {
                 for s in selectors {
-                    result.append(&mut s.query_located(current, root, parent.clone()));
+                    result.append(&mut s.query_located(current, root, registry, parent.clone()));
                 }
             }
             Segment::DotName(name) => {

@@ -18,6 +18,7 @@ use std::fmt;
 
 use num_traits::ToPrimitive;
 
+use crate::spec::functions::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantArray;
 use crate::LocatedNode;
@@ -70,7 +71,12 @@ fn resolve_index(index: i64, len: usize) -> Option<usize> {
 }
 
 impl Queryable for Index {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        _root: &'b T,
+        _registry: &R,
+    ) -> Vec<&'b T> {
         current
             .as_array()
             .and_then(|list| {
@@ -81,10 +87,11 @@ impl Queryable for Index {
             .unwrap_or_default()
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
+        _registry: &R,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         current

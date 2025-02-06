@@ -20,6 +20,7 @@ use std::cmp::Ordering;
 
 use num_traits::ToPrimitive;
 
+use crate::spec::functions::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantArray;
 use crate::LocatedNode;
@@ -162,14 +163,20 @@ impl Slice {
 }
 
 impl Queryable for Slice {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
-        self.select(current, |_, node| node)
-    }
-
-    fn query_located<'b, T: VariantValue>(
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
+        _registry: &R,
+    ) -> Vec<&'b T> {
+        self.select(current, |_, node| node)
+    }
+
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        _root: &'b T,
+        _registry: &R,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         self.select(current, |i, node| {

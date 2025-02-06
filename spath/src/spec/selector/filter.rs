@@ -21,6 +21,8 @@ use super::name::Name;
 use super::Selector;
 use crate::node::LocatedNode;
 use crate::path::NormalizedPath;
+use crate::spec::functions::FunctionExpr;
+use crate::spec::functions::FunctionRegistry;
 use crate::spec::functions::SPathValue;
 use crate::spec::query::Query;
 use crate::spec::query::QueryKind;
@@ -50,7 +52,12 @@ mod sealed {
 /// Trait for testing a filter type.
 pub trait TestFilter: sealed::Sealed {
     /// Test self using the current and root nodes.
-    fn test_filter<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> bool;
+    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> bool;
 }
 
 /// The main filter type for SPath.
@@ -64,36 +71,42 @@ impl fmt::Display for Filter {
 }
 
 impl Queryable for Filter {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> Vec<&'b T> {
         if let Some(list) = current.as_array() {
             list.iter()
-                .filter(|v| self.0.test_filter(*v, root))
+                .filter(|v| self.0.test_filter(*v, root, registry))
                 .collect()
         } else if let Some(obj) = current.as_object() {
             obj.iter()
                 .map(|(_, v)| v)
-                .filter(|v| self.0.test_filter(*v, root))
+                .filter(|v| self.0.test_filter(*v, root, registry))
                 .collect()
         } else {
             vec![]
         }
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         if let Some(list) = current.as_array() {
             list.iter()
                 .enumerate()
-                .filter(|(_, v)| self.0.test_filter(*v, root))
+                .filter(|(_, v)| self.0.test_filter(*v, root, registry))
                 .map(|(i, v)| LocatedNode::new(parent.clone_and_push(i), v))
                 .collect()
         } else if let Some(obj) = current.as_object() {
             obj.iter()
-                .filter(|(_, v)| self.0.test_filter(*v, root))
+                .filter(|(_, v)| self.0.test_filter(*v, root, registry))
                 .map(|(k, v)| LocatedNode::new(parent.clone_and_push(k), v))
                 .collect()
         } else {
@@ -123,8 +136,15 @@ impl fmt::Display for LogicalOrExpr {
 }
 
 impl TestFilter for LogicalOrExpr {
-    fn test_filter<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> bool {
-        self.0.iter().any(|expr| expr.test_filter(current, root))
+    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> bool {
+        self.0
+            .iter()
+            .any(|expr| expr.test_filter(current, root, registry))
     }
 }
 
@@ -146,8 +166,15 @@ impl fmt::Display for LogicalAndExpr {
 }
 
 impl TestFilter for LogicalAndExpr {
-    fn test_filter<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> bool {
-        self.0.iter().all(|expr| expr.test_filter(current, root))
+    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> bool {
+        self.0
+            .iter()
+            .all(|expr| expr.test_filter(current, root, registry))
     }
 }
 
@@ -189,13 +216,18 @@ impl BasicExpr {
 }
 
 impl TestFilter for BasicExpr {
-    fn test_filter<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> bool {
+    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> bool {
         match self {
-            BasicExpr::Paren(expr) => expr.test_filter(current, root),
-            BasicExpr::ParenNot(expr) => !expr.test_filter(current, root),
-            BasicExpr::Relation(expr) => expr.test_filter(current, root),
-            BasicExpr::Exist(expr) => expr.test_filter(current, root),
-            BasicExpr::NotExist(expr) => !expr.test_filter(current, root),
+            BasicExpr::Paren(expr) => expr.test_filter(current, root, registry),
+            BasicExpr::ParenNot(expr) => !expr.test_filter(current, root, registry),
+            BasicExpr::Relation(expr) => expr.test_filter(current, root, registry),
+            BasicExpr::Exist(expr) => expr.test_filter(current, root, registry),
+            BasicExpr::NotExist(expr) => !expr.test_filter(current, root, registry),
         }
     }
 }
@@ -211,8 +243,13 @@ impl fmt::Display for ExistExpr {
 }
 
 impl TestFilter for ExistExpr {
-    fn test_filter<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> bool {
-        !self.0.query(current, root).is_empty()
+    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> bool {
+        !self.0.query(current, root, registry).is_empty()
     }
 }
 
@@ -240,9 +277,14 @@ impl fmt::Display for ComparisonExpr {
 }
 
 impl TestFilter for ComparisonExpr {
-    fn test_filter<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> bool {
-        let left = self.left.as_value(current, root);
-        let right = self.right.as_value(current, root);
+    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> bool {
+        let left = self.left.as_value(current, root, registry);
+        let right = self.right.as_value(current, root, registry);
         match self.op {
             ComparisonOperator::EqualTo => check_equal_to(&left, &right),
             ComparisonOperator::NotEqualTo => !check_equal_to(&left, &right),
@@ -322,6 +364,8 @@ pub enum Comparable {
     ///
     /// This will only produce a single node, i.e., a variant value, or nothing
     SingularQuery(SingularQuery),
+    /// A function expression that can only produce a `ValueType`
+    FunctionExpr(FunctionExpr),
 }
 
 impl fmt::Display for Comparable {
@@ -329,16 +373,18 @@ impl fmt::Display for Comparable {
         match self {
             Comparable::Literal(lit) => write!(f, "{lit}"),
             Comparable::SingularQuery(path) => write!(f, "{path}"),
+            Comparable::FunctionExpr(expr) => write!(f, "{expr}"),
         }
     }
 }
 
 impl Comparable {
-    #[doc(hidden)]
-    pub fn as_value<'a, 'b: 'a, T: VariantValue>(
+    /// Convert the comparable variable to a variant value.
+    pub fn as_value<'a, 'b: 'a, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &'a self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
     ) -> SPathValue<'a, T> {
         match self {
             Comparable::Literal(lit) => match T::from_literal(lit.clone()) {
@@ -349,6 +395,7 @@ impl Comparable {
                 Some(v) => SPathValue::Node(v),
                 None => SPathValue::Nothing,
             },
+            Comparable::FunctionExpr(expr) => expr.evaluate(current, root, registry),
         }
     }
 }

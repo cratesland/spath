@@ -24,6 +24,7 @@ use std::fmt;
 use self::index::Index;
 use self::name::Name;
 use self::slice::Slice;
+use crate::spec::functions::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::spec::select_wildcard;
 use crate::spec::selector::filter::Filter;
@@ -71,26 +72,32 @@ impl fmt::Display for Selector {
 }
 
 impl Queryable for Selector {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> Vec<&'b T> {
         let mut result = Vec::new();
         match self {
-            Selector::Name(name) => result.append(&mut name.query(current, root)),
+            Selector::Name(name) => result.append(&mut name.query(current, root, registry)),
             Selector::Wildcard => select_wildcard(&mut result, current),
-            Selector::Index(index) => result.append(&mut index.query(current, root)),
-            Selector::ArraySlice(slice) => result.append(&mut slice.query(current, root)),
-            Selector::Filter(filter) => result.append(&mut filter.query(current, root)),
+            Selector::Index(index) => result.append(&mut index.query(current, root, registry)),
+            Selector::ArraySlice(slice) => result.append(&mut slice.query(current, root, registry)),
+            Selector::Filter(filter) => result.append(&mut filter.query(current, root, registry)),
         }
         result
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
+        registry: &R,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         match self {
-            Selector::Name(name) => name.query_located(current, root, parent),
+            Selector::Name(name) => name.query_located(current, root, registry, parent),
             Selector::Wildcard => {
                 if let Some(list) = current.as_array() {
                     list.iter()
@@ -105,9 +112,9 @@ impl Queryable for Selector {
                     vec![]
                 }
             }
-            Selector::Index(index) => index.query_located(current, root, parent),
-            Selector::ArraySlice(slice) => slice.query_located(current, root, parent),
-            Selector::Filter(filter) => filter.query_located(current, root, parent),
+            Selector::Index(index) => index.query_located(current, root, registry, parent),
+            Selector::ArraySlice(slice) => slice.query_located(current, root, registry, parent),
+            Selector::Filter(filter) => filter.query_located(current, root, registry, parent),
         }
     }
 }

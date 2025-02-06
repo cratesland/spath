@@ -16,6 +16,7 @@
 
 use std::fmt;
 
+use crate::spec::functions::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantObject;
 use crate::LocatedNode;
@@ -49,9 +50,13 @@ impl fmt::Display for Name {
 }
 
 impl Queryable for Name {
-    fn query<'b, T: VariantValue>(&self, current: &'b T, _root: &'b T) -> Vec<&'b T> {
+    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        _root: &'b T,
+        _registry: &R,
+    ) -> Vec<&'b T> {
         let name = self.name.as_str();
-
         current
             .as_object()
             .and_then(|o| o.get(name))
@@ -59,14 +64,14 @@ impl Queryable for Name {
             .unwrap_or_default()
     }
 
-    fn query_located<'b, T: VariantValue>(
+    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
+        _registry: &R,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         let name = self.name.as_str();
-
         current
             .as_object()
             .and_then(|o| o.get_key_value(name))
