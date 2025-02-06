@@ -65,21 +65,19 @@ pub struct Query {
     pub segments: Vec<QuerySegment>,
 }
 
-// TODO(tisonkun): used if we implement function extension support
-//
-// impl Query {
-//     pub(crate) fn is_singular(&self) -> bool {
-//         for s in &self.segments {
-//             if s.is_descendent() {
-//                 return false;
-//             }
-//             if !s.segment.is_singular() {
-//                 return false;
-//             }
-//         }
-//         true
-//     }
-// }
+impl Query {
+    pub(crate) fn is_singular(&self) -> bool {
+        for s in &self.segments {
+            if s.is_descendent() {
+                return false;
+            }
+            if !s.segment.is_singular() {
+                return false;
+            }
+        }
+        true
+    }
+}
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

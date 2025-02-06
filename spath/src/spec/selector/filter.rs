@@ -316,11 +316,11 @@ impl fmt::Display for ComparisonOperator {
 /// A type that is comparable
 #[derive(Debug, Clone)]
 pub enum Comparable {
-    /// A literal variant value, excluding objects and arrays
+    /// A literal variant value, excluding objects and arrays.
     Literal(Literal),
-    /// A singular query
+    /// A singular query.
     ///
-    /// This will only produce a single node, i.e., JSON value, or nothing
+    /// This will only produce a single node, i.e., a variant value, or nothing
     SingularQuery(SingularQuery),
 }
 

@@ -12,10 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::VecDeque;
 use std::fmt;
 use std::ops::Deref;
 use std::ops::DerefMut;
+use std::sync::Arc;
 
+use crate::spec::query::Query;
+use crate::spec::query::Queryable;
+use crate::spec::selector::filter::LogicalOrExpr;
+use crate::spec::selector::filter::SingularQuery;
+use crate::spec::selector::filter::TestFilter;
+use crate::Literal;
 use crate::NodeList;
 use crate::VariantValue;
 
@@ -252,4 +260,230 @@ pub enum SPathValue<'a, T: VariantValue> {
     Node(&'a T),
     Value(T),
     Nothing,
+}
+
+#[doc(hidden)]
+pub type Validator<T> =
+    Arc<dyn Fn(&[FunctionExprArg<T>]) -> Result<(), FunctionValidationError> + Send + Sync>;
+
+#[doc(hidden)]
+pub type Evaluator<T> =
+    Arc<dyn for<'a> Fn(VecDeque<SPathValue<'a, T>>) -> SPathValue<'a, T> + Sync + Send>;
+
+#[doc(hidden)]
+pub struct Function<T: VariantValue> {
+    pub name: &'static str,
+    pub result_type: FunctionArgType,
+    pub validator: Validator<T>,
+    pub evaluator: Evaluator<T>,
+}
+
+impl<T: VariantValue> fmt::Debug for Function<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Function")
+            .field("name", &self.name)
+            .field("result_type", &self.result_type)
+            .finish()
+    }
+}
+
+impl<T: VariantValue> Function<T> {
+    pub const fn new(
+        name: &'static str,
+        result_type: FunctionArgType,
+        evaluator: Evaluator<T>,
+        validator: Validator<T>,
+    ) -> Self {
+        Self {
+            name,
+            result_type,
+            evaluator,
+            validator,
+        }
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct FunctionExpr<V, T: VariantValue> {
+    pub name: String,
+    pub args: Vec<FunctionExprArg<T>>,
+    pub return_type: FunctionArgType,
+    pub validated: V,
+}
+
+impl<T: VariantValue> FunctionExpr<Validated<T>, T> {
+    pub fn evaluate<'a, 'b: 'a>(&'a self, current: &'b T, root: &'b T) -> SPathValue<'a, T> {
+        let args: VecDeque<SPathValue<T>> = self
+            .args
+            .iter()
+            .map(|a| a.evaluate(current, root))
+            .collect();
+        (self.validated.evaluator)(args)
+    }
+}
+
+impl<T: VariantValue> FunctionExpr<NotValidated, T> {
+    pub fn validate(
+        name: String,
+        args: Vec<FunctionExprArg<T>>,
+        registry: FunctionRegistry<T>,
+    ) -> Result<FunctionExpr<Validated<T>, T>, FunctionValidationError> {
+        for f in registry.functions.iter() {
+            if f.name == name {
+                (f.validator)(args.as_slice())?;
+                return Ok(FunctionExpr {
+                    name,
+                    args,
+                    return_type: f.result_type,
+                    validated: Validated {
+                        evaluator: f.evaluator.clone(),
+                    },
+                });
+            }
+        }
+        Err(FunctionValidationError::Undefined { name })
+    }
+}
+
+impl<V, T: VariantValue> fmt::Display for FunctionExpr<V, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{name}(", name = self.name)?;
+        for (i, arg) in self.args.iter().enumerate() {
+            write!(
+                f,
+                "{arg}{comma}",
+                comma = if i == self.args.len() - 1 { "" } else { "," }
+            )?;
+        }
+        write!(f, ")")
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct NotValidated;
+
+#[doc(hidden)]
+pub struct Validated<T: VariantValue> {
+    pub evaluator: Evaluator<T>,
+}
+
+impl<T: VariantValue> fmt::Debug for Validated<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Validated").finish()
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct FunctionRegistry<T: VariantValue> {
+    functions: Vec<Function<T>>,
+}
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub enum FunctionExprArg<T: VariantValue> {
+    Literal(Literal),
+    SingularQuery(SingularQuery),
+    FilterQuery(Query),
+    LogicalExpr(LogicalOrExpr),
+    FunctionExpr(FunctionExpr<Validated<T>, T>),
+}
+
+impl<T: VariantValue> fmt::Display for FunctionExprArg<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FunctionExprArg::Literal(lit) => write!(f, "{lit}"),
+            FunctionExprArg::FilterQuery(query) => write!(f, "{query}"),
+            FunctionExprArg::SingularQuery(sq) => write!(f, "{sq}"),
+            FunctionExprArg::LogicalExpr(log) => write!(f, "{log}"),
+            FunctionExprArg::FunctionExpr(func) => write!(f, "{func}"),
+        }
+    }
+}
+
+impl<T: VariantValue> FunctionExprArg<T> {
+    fn evaluate<'a, 'b: 'a>(&'a self, current: &'b T, root: &'b T) -> SPathValue<'a, T> {
+        match self {
+            FunctionExprArg::Literal(lit) => match T::from_literal(lit.clone()) {
+                None => SPathValue::Nothing,
+                Some(v) => SPathValue::Value(v),
+            },
+            FunctionExprArg::SingularQuery(q) => match q.eval_query(current, root) {
+                Some(n) => SPathValue::Node(n),
+                None => SPathValue::Nothing,
+            },
+            FunctionExprArg::FilterQuery(q) => {
+                let nodes = q.query(current, root);
+                SPathValue::Nodes(NodeList::new(nodes))
+            }
+            FunctionExprArg::LogicalExpr(l) => match l.test_filter(current, root) {
+                true => SPathValue::Logical(LogicalType::True),
+                false => SPathValue::Logical(LogicalType::False),
+            },
+            FunctionExprArg::FunctionExpr(f) => f.evaluate(current, root),
+        }
+    }
+
+    pub fn as_type_kind(
+        &self,
+        registry: FunctionRegistry<T>,
+    ) -> Result<FunctionArgType, FunctionValidationError> {
+        match self {
+            FunctionExprArg::Literal(_) => Ok(FunctionArgType::Literal),
+            FunctionExprArg::SingularQuery(_) => Ok(FunctionArgType::SingularQuery),
+            FunctionExprArg::FilterQuery(query) => {
+                if query.is_singular() {
+                    Ok(FunctionArgType::SingularQuery)
+                } else {
+                    Ok(FunctionArgType::Nodelist)
+                }
+            }
+            FunctionExprArg::LogicalExpr(_) => Ok(FunctionArgType::Logical),
+            FunctionExprArg::FunctionExpr(func) => {
+                for f in registry.functions.iter() {
+                    if f.name == func.name.as_str() {
+                        return Ok(f.result_type);
+                    }
+                }
+                Err(FunctionValidationError::Undefined {
+                    name: func.name.to_string(),
+                })
+            }
+        }
+    }
+}
+
+/// An error occurred while validating a function
+#[derive(Debug, thiserror::Error, PartialEq)]
+pub enum FunctionValidationError {
+    /// Function not defined in inventory
+    #[error("function name '{name}' is not defined")]
+    Undefined {
+        /// The name of the function
+        name: String,
+    },
+    /// Mismatch in number of function arguments
+    #[error("expected {expected} args, but received {received}")]
+    NumberOfArgsMismatch {
+        /// Expected number of arguments
+        expected: usize,
+        /// Received number of arguments
+        received: usize,
+    },
+    /// The type of received argument does not match the function definition
+    #[error("in function {name}, in argument position {position}, expected a type that converts to {expected}, received {received}")]
+    MismatchTypeKind {
+        /// Function name
+        name: String,
+        /// Expected type
+        expected: SPathType,
+        /// Received type
+        received: FunctionArgType,
+        /// Argument position
+        position: usize,
+    },
+    #[error("function with incorrect return type used")]
+    IncorrectFunctionReturnType,
 }
