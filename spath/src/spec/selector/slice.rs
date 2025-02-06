@@ -20,7 +20,7 @@ use std::cmp::Ordering;
 
 use num_traits::ToPrimitive;
 
-use crate::spec::functions::FunctionRegistry;
+use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantArray;
 use crate::LocatedNode;

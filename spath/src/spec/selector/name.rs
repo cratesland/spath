@@ -16,7 +16,7 @@
 
 use std::fmt;
 
-use crate::spec::functions::FunctionRegistry;
+use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::ConcreteVariantObject;
 use crate::LocatedNode;

@@ -24,7 +24,7 @@ use std::fmt;
 use self::index::Index;
 use self::name::Name;
 use self::slice::Slice;
-use crate::spec::functions::FunctionRegistry;
+use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Queryable;
 use crate::spec::select_wildcard;
 use crate::spec::selector::filter::Filter;

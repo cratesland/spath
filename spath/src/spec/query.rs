@@ -19,7 +19,7 @@ use std::fmt;
 use super::segment::QuerySegment;
 use crate::node::LocatedNode;
 use crate::path::NormalizedPath;
-use crate::spec::functions::FunctionRegistry;
+use crate::spec::function::FunctionRegistry;
 use crate::VariantValue;
 
 mod sealed {

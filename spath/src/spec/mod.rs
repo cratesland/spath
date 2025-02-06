@@ -18,7 +18,7 @@ use crate::ConcreteVariantArray;
 use crate::ConcreteVariantObject;
 use crate::VariantValue;
 
-pub mod functions;
+pub mod function;
 pub mod query;
 pub mod segment;
 pub mod selector;
