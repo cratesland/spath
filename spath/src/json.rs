@@ -111,7 +111,7 @@ pub struct JsonValueOps;
 impl ConcreteVariantOps for JsonValueOps {
     type Value = Value;
 
-    fn from_literal(literal: Literal) -> Option<Self::Value> {
+    fn literal_to_value(&self, literal: Literal) -> Option<Self::Value> {
         match literal {
             Literal::Int(v) => Some(Value::Number(v.into())),
             Literal::UInt(v) => Some(Value::Number(v.into())),
@@ -120,5 +120,9 @@ impl ConcreteVariantOps for JsonValueOps {
             Literal::Bool(b) => Some(Value::Bool(b)),
             Literal::Null => Some(Value::Null),
         }
+    }
+
+    fn check_equal_to(&self, left: &Self::Value, right: &Self::Value) -> bool {
+        left == right
     }
 }

@@ -16,6 +16,7 @@ use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
 use crate::{ConcreteVariantOps, Literal};
+use num_cmp::NumCmp;
 use num_traits::ToPrimitive;
 use toml::Table;
 use toml::Value;
@@ -117,7 +118,7 @@ pub struct TomlValueOps;
 impl ConcreteVariantOps for TomlValueOps {
     type Value = Value;
 
-    fn from_literal(literal: Literal) -> Option<Self::Value> {
+    fn literal_to_value(&self, literal: Literal) -> Option<Self::Value> {
         match literal {
             Literal::Int(v) => Some(Value::Integer(v)),
             Literal::UInt(v) => v.to_i64().map(Value::Integer),
@@ -125,6 +126,14 @@ impl ConcreteVariantOps for TomlValueOps {
             Literal::String(v) => Some(Value::String(v)),
             Literal::Bool(v) => Some(Value::Boolean(v)),
             Literal::Null => None,
+        }
+    }
+
+    fn check_equal_to(&self, left: &Self::Value, right: &Self::Value) -> bool {
+        match (left, right) {
+            (Value::Integer(l), Value::Float(r)) => NumCmp::num_eq(l, r),
+            (Value::Float(l), Value::Integer(r)) => NumCmp::num_eq(l, r),
+            _ => left == right,
         }
     }
 }

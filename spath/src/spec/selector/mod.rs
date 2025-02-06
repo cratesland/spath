@@ -34,7 +34,7 @@ use crate::NormalizedPath;
 use crate::VariantValue;
 
 /// An SPath selector
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Selector {
     /// Select an object key
     Name(Name),

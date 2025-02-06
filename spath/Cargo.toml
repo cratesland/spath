@@ -39,6 +39,7 @@ json = ["dep:serde_json"]
 toml = ["dep:toml"]
 
 [dependencies]
+num-cmp = { version = "0.1.0" }
 num-traits = { version = "0.2.19" }
 thiserror = { version = "2.0.8" }
 

@@ -16,6 +16,7 @@
 
 use super::{index::Index, name::Name, Selector};
 use crate::spec::functions::SPathValue;
+use crate::value::ConcreteVariantOps;
 use crate::{
     node::LocatedNode,
     path::NormalizedPath,
@@ -23,8 +24,9 @@ use crate::{
         query::{Query, QueryKind, Queryable},
         segment::{QuerySegment, Segment},
     },
-    ConcreteVariantArray, ConcreteVariantObject, VariantValue,
+    ConcreteVariantArray, ConcreteVariantObject, Literal, VariantValue,
 };
+use std::fmt;
 
 mod sealed {
     use super::{BasicExpr, ComparisonExpr, ExistExpr, LogicalAndExpr, LogicalOrExpr};
@@ -44,11 +46,11 @@ pub trait TestFilter: sealed::Sealed {
 }
 
 /// The main filter type for SPath.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Filter(pub LogicalOrExpr);
 
-impl std::fmt::Display for Filter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Filter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{expr}", expr = self.0)
     }
 }
@@ -96,11 +98,11 @@ impl Queryable for Filter {
 ///
 /// This is also `logical-expression` in RFC 9535, but the naming was chosen to
 /// make it more clear that it represents the logical OR, and to not have an extra wrapping type.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct LogicalOrExpr(pub Vec<LogicalAndExpr>);
 
-impl std::fmt::Display for LogicalOrExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for LogicalOrExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, expr) in self.0.iter().enumerate() {
             write!(
                 f,
@@ -119,11 +121,11 @@ impl TestFilter for LogicalOrExpr {
 }
 
 /// A logical AND expression.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct LogicalAndExpr(pub Vec<BasicExpr>);
 
-impl std::fmt::Display for LogicalAndExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for LogicalAndExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, expr) in self.0.iter().enumerate() {
             write!(
                 f,
@@ -142,7 +144,7 @@ impl TestFilter for LogicalAndExpr {
 }
 
 /// The basic for m of expression in a filter.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub enum BasicExpr {
     /// An expression wrapped in parentheses
     Paren(LogicalOrExpr),
@@ -156,8 +158,8 @@ pub enum BasicExpr {
     NotExist(ExistExpr),
 }
 
-impl std::fmt::Display for BasicExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for BasicExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BasicExpr::Paren(expr) => write!(f, "({expr})"),
             BasicExpr::ParenNot(expr) => write!(f, "!({expr})"),
@@ -191,11 +193,11 @@ impl TestFilter for BasicExpr {
 }
 
 /// Existence expression.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ExistExpr(pub Query);
 
-impl std::fmt::Display for ExistExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ExistExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{query}", query = self.0)
     }
 }
@@ -207,7 +209,7 @@ impl TestFilter for ExistExpr {
 }
 
 /// A comparison expression comparing two JSON values
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ComparisonExpr {
     /// The JSON value on the left of the comparison
     pub left: Comparable,
@@ -217,77 +219,8 @@ pub struct ComparisonExpr {
     pub right: Comparable,
 }
 
-fn check_equal_to<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) -> bool {
-    match (left, right) {
-        (SPathValue::Node(v1), SPathValue::Node(v2)) => value_equal_to(*v1, *v2),
-        (SPathValue::Node(v1), SPathValue::Value(v2)) => value_equal_to(*v1, v2),
-        (SPathValue::Value(v1), SPathValue::Node(v2)) => value_equal_to(v1, *v2),
-        (SPathValue::Value(v1), SPathValue::Value(v2)) => value_equal_to(v1, v2),
-        (SPathValue::Nothing, SPathValue::Nothing) => true,
-        _ => false,
-    }
-}
-
-fn value_equal_to<T: VariantValue>(left: &T, right: &T) -> bool {
-    let _ = (left, right);
-    todo!("implement value_equal_to")
-    // match (left, right) {
-    //     (Value::Number(l), Value::Number(r)) => number_equal_to(l, r),
-    //     _ => left == right,
-    // }
-}
-
-fn number_equal_to(left: &Number, right: &Number) -> bool {
-    if let (Some(l), Some(r)) = (left.as_f64(), right.as_f64()) {
-        l == r
-    } else if let (Some(l), Some(r)) = (left.as_i64(), right.as_i64()) {
-        l == r
-    } else if let (Some(l), Some(r)) = (left.as_u64(), right.as_u64()) {
-        l == r
-    } else {
-        false
-    }
-}
-
-fn value_less_than(left: &Value, right: &Value) -> bool {
-    match (left, right) {
-        (Value::Number(n1), Value::Number(n2)) => number_less_than(n1, n2),
-        (Value::String(s1), Value::String(s2)) => s1 < s2,
-        _ => false,
-    }
-}
-
-fn check_less_than<T: VariantValue>(left: &SPathValue, right: &SPathValue) -> bool {
-    match (left, right) {
-        (SPathValue::Node(v1), SPathValue::Node(v2)) => value_less_than(v1, v2),
-        (SPathValue::Node(v1), SPathValue::Value(v2)) => value_less_than(v1, v2),
-        (SPathValue::Value(v1), SPathValue::Node(v2)) => value_less_than(v1, v2),
-        (SPathValue::Value(v1), SPathValue::Value(v2)) => value_less_than(v1, v2),
-        _ => false,
-    }
-}
-
-fn value_same_type(left: &Value, right: &Value) -> bool {
-    matches!((left, right), (Value::Null, Value::Null))
-        | matches!((left, right), (Value::Bool(_), Value::Bool(_)))
-        | matches!((left, right), (Value::Number(_), Value::Number(_)))
-        | matches!((left, right), (Value::String(_), Value::String(_)))
-        | matches!((left, right), (Value::Array(_), Value::Array(_)))
-        | matches!((left, right), (Value::Object(_), Value::Object(_)))
-}
-
-fn check_same_type(left: &SPathValue, right: &SPathValue) -> bool {
-    match (left, right) {
-        (SPathValue::Node(v1), SPathValue::Node(v2)) => value_same_type(v1, v2),
-        (SPathValue::Node(v1), SPathValue::Value(v2)) => value_same_type(v1, v2),
-        (SPathValue::Value(v1), SPathValue::Node(v2)) => value_same_type(v1, v2),
-        (SPathValue::Value(v1), SPathValue::Value(v2)) => value_same_type(v1, v2),
-        _ => false,
-    }
-}
-
-impl std::fmt::Display for ComparisonExpr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ComparisonExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{left}{op}{right}",
@@ -324,16 +257,28 @@ impl TestFilter for ComparisonExpr {
     }
 }
 
-fn number_less_than(n1: &Number, n2: &Number) -> bool {
-    if let (Some(a), Some(b)) = (n1.as_f64(), n2.as_f64()) {
-        a < b
-    } else if let (Some(a), Some(b)) = (n1.as_i64(), n2.as_i64()) {
-        a < b
-    } else if let (Some(a), Some(b)) = (n1.as_u64(), n2.as_u64()) {
-        a < b
-    } else {
-        false
-    }
+fn check_equal_to<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) -> bool {
+    let (left, right) = match (left, right) {
+        (SPathValue::Node(v1), SPathValue::Node(v2)) => (*v1, *v2),
+        (SPathValue::Node(v1), SPathValue::Value(v2)) => (*v1, v2),
+        (SPathValue::Value(v1), SPathValue::Node(v2)) => (v1, *v2),
+        (SPathValue::Value(v1), SPathValue::Value(v2)) => (v1, v2),
+        (SPathValue::Nothing, SPathValue::Nothing) => return true,
+        _ => return false,
+    };
+
+    let ops = T::ops();
+    ops.check_equal_to(&left, &right)
+}
+
+fn check_same_type<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) -> bool {
+    let (left, right) = match (left, right) {
+        (SPathValue::Node(v1), SPathValue::Node(v2)) => (v1, v2),
+        (SPathValue::Node(v1), SPathValue::Value(v2)) => (v1, v2),
+        (SPathValue::Value(v1), SPathValue::Node(v2)) => (v1, v2),
+        (SPathValue::Value(v1), SPathValue::Value(v2)) => (v1, v2),
+        _ => return false,
+    };
 }
 
 /// The comparison operator
@@ -353,8 +298,8 @@ pub enum ComparisonOperator {
     GreaterThanEqualTo,
 }
 
-impl std::fmt::Display for ComparisonOperator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ComparisonOperator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ComparisonOperator::EqualTo => write!(f, "=="),
             ComparisonOperator::NotEqualTo => write!(f, "!="),
@@ -367,9 +312,9 @@ impl std::fmt::Display for ComparisonOperator {
 }
 
 /// A type that is comparable
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Comparable {
-    /// A literal JSON value, excluding objects and arrays
+    /// A literal variant value, excluding objects and arrays
     Literal(Literal),
     /// A singular query
     ///
@@ -377,8 +322,8 @@ pub enum Comparable {
     SingularQuery(SingularQuery),
 }
 
-impl std::fmt::Display for Comparable {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Comparable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Comparable::Literal(lit) => write!(f, "{lit}"),
             Comparable::SingularQuery(path) => write!(f, "{path}"),
@@ -394,7 +339,12 @@ impl Comparable {
         root: &'b T,
     ) -> SPathValue<'a, T> {
         match self {
-            Comparable::Literal(lit) => lit.into(),
+            Comparable::Literal(lit) => {
+                let ops = T::ops();
+                // SAFETY: value checked during bind
+                let value = ops.literal_to_value(lit.clone()).unwrap();
+                SPathValue::Value(value)
+            }
             Comparable::SingularQuery(sp) => match sp.eval_query(current, root) {
                 Some(v) => SPathValue::Node(v),
                 None => SPathValue::Nothing,
@@ -411,43 +361,6 @@ impl Comparable {
     }
 }
 
-/// A literal JSON value that can be represented in a JSONPath query
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Literal {
-    /// A valid JSON number
-    Number(Number),
-    /// A string
-    String(String),
-    /// `true` or `false`
-    Bool(bool),
-    /// `null`
-    Null,
-}
-
-impl<'a> From<&'a Literal> for SPathValue<'a> {
-    fn from(value: &'a Literal) -> Self {
-        match value {
-            // Cloning here seems cheap, certainly for numbers, but it may not be desirable for
-            // strings.
-            Literal::Number(n) => SPathValue::Value(n.to_owned().into()),
-            Literal::String(s) => SPathValue::Value(s.to_owned().into()),
-            Literal::Bool(b) => SPathValue::Value(Value::from(*b)),
-            Literal::Null => SPathValue::Value(Value::Null),
-        }
-    }
-}
-
-impl std::fmt::Display for Literal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Literal::Number(n) => write!(f, "{n}"),
-            Literal::String(s) => write!(f, "'{s}'"),
-            Literal::Bool(b) => write!(f, "{b}"),
-            Literal::Null => write!(f, "null"),
-        }
-    }
-}
-
 /// A segment in a singular query
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum SingularQuerySegment {
@@ -457,8 +370,8 @@ pub enum SingularQuerySegment {
     Index(Index),
 }
 
-impl std::fmt::Display for SingularQuerySegment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SingularQuerySegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SingularQuerySegment::Name(name) => write!(f, "{name}"),
             SingularQuerySegment::Index(index) => write!(f, "{index}"),
@@ -558,8 +471,8 @@ impl TryFrom<Query> for SingularQuery {
     }
 }
 
-impl std::fmt::Display for SingularQuery {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SingularQuery {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.kind {
             SingularQueryKind::Absolute => write!(f, "$")?,
             SingularQueryKind::Relative => write!(f, "@")?,

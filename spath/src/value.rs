@@ -14,6 +14,8 @@
 
 //! Public structs and traits for variant (semi-structured) data values.
 
+use std::fmt;
+
 /// A literal variant value that can be represented in a SPath query
 #[derive(Debug, Clone)]
 pub enum Literal {
@@ -31,8 +33,21 @@ pub enum Literal {
     Null,
 }
 
+impl fmt::Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Literal::Int(n) => write!(f, "{n}"),
+            Literal::UInt(n) => write!(f, "{n}"),
+            Literal::Float(n) => write!(f, "{n:?}"),
+            Literal::String(s) => write!(f, "'{s}'"),
+            Literal::Bool(b) => write!(f, "{b}"),
+            Literal::Null => write!(f, "null"),
+        }
+    }
+}
+
 /// A trait for any variant value.
-pub trait VariantValue: Clone {
+pub trait VariantValue {
     /// The type of the array variant.
     type VariantArray: ConcreteVariantArray<Value = Self>;
     /// The type of the object variant.
@@ -94,5 +109,7 @@ pub trait ConcreteVariantOps {
     /// The type of the value to manipulate.
     type Value: VariantValue<VariantOps = Self>;
     /// Create a new value from a literal.
-    fn from_literal(literal: Literal) -> Option<Self::Value>;
+    fn literal_to_value(&self, literal: Literal) -> Option<Self::Value>;
+    /// Whether the two values are equal.
+    fn check_equal_to(&self, left: &Self::Value, right: &Self::Value) -> bool;
 }

@@ -57,7 +57,7 @@ pub trait Queryable: sealed::Sealed {
 }
 
 /// Represents a SPath expression
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Query {
     /// The kind of query, root (`$`), or current (`@`)
     pub kind: QueryKind,

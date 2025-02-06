@@ -24,7 +24,7 @@ use crate::NormalizedPath;
 use crate::VariantValue;
 
 /// A segment of a JSONPath query
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub struct QuerySegment {
     /// The kind of segment
     pub kind: QuerySegmentKind,
@@ -125,7 +125,7 @@ pub enum QuerySegmentKind {
 }
 
 /// Represents the different forms of SPath segment.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Segment {
     /// Long hand segments contain multiple selectors inside square brackets.
     LongHand(Vec<Selector>),
