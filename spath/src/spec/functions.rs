@@ -94,7 +94,7 @@ impl FunctionArgType {
 
 /// SPath value representing a node list.
 ///
-/// This is a thin wrapper around a [`NodeList`], and generally represents the result of a SPath
+/// This is a thin wrapper around a [`NodeList`], and generally represents the result of an SPath
 /// query. It may also be produced by a function.
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct NodesType<'a, T: VariantValue>(NodeList<'a, T>);
@@ -147,7 +147,7 @@ impl<'a, T: VariantValue> From<NodeList<'a, T>> for NodesType<'a, T> {
 
 impl<'a, T: VariantValue> From<Vec<&'a T>> for NodesType<'a, T> {
     fn from(values: Vec<&'a T>) -> Self {
-        Self(values.into())
+        Self(NodeList::new(values))
     }
 }
 
@@ -194,7 +194,7 @@ impl From<bool> for LogicalType {
 /// SPath value representing a singular value or Nothing.
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub enum ValueType<'a, T: VariantValue> {
-    /// This may come from a literal value declared in a SPath query, or be produced by a
+    /// This may come from a literal value declared in an SPath query, or be produced by a
     /// function.
     Value(T),
     /// This would be a reference to a location in the object being queried, i.e., the result
@@ -217,7 +217,7 @@ impl<T: VariantValue> ValueType<'_, T> {
         FunctionArgType::Value
     }
 
-    /// Convert to a reference of a [`serde_json::Value`] if possible.
+    /// Convert to a reference of a variant value if possible.
     pub fn as_value(&self) -> Option<&T> {
         match self {
             ValueType::Value(v) => Some(v),

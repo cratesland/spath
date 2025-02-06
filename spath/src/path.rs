@@ -85,7 +85,7 @@ impl<'a> IntoIterator for NormalizedPath<'a> {
 }
 
 impl fmt::Display for NormalizedPath<'_> {
-    /// Format the [`NormalizedPath`] as a SPath string using the canonical bracket notation
+    /// Format the [`NormalizedPath`] as an SPath string using the canonical bracket notation
     /// as per [RFC 9535][norm-paths]
     ///
     /// [norm-paths]: https://datatracker.ietf.org/doc/html/rfc9535#name-normalized-paths

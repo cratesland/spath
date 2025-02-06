@@ -15,18 +15,25 @@
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
-use crate::{ConcreteVariantOps, Literal};
+use crate::{FromLiteral, Literal};
 use serde_json::Value;
 use serde_json::{Map, Number};
+
+impl FromLiteral for Value {
+    fn from_literal(literal: Literal) -> Option<Self> {
+        match literal {
+            Literal::Int(v) => Some(Value::Number(Number::from(v))),
+            Literal::Float(v) => Number::from_f64(v).map(Value::Number),
+            Literal::String(v) => Some(Value::String(v)),
+            Literal::Bool(v) => Some(Value::Bool(v)),
+            Literal::Null => Some(Value::Null),
+        }
+    }
+}
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Map<String, Value>;
-    type VariantOps = JsonValueOps;
-
-    fn ops() -> Self::VariantOps {
-        JsonValueOps
-    }
 
     fn is_null(&self) -> bool {
         self.is_null()
@@ -102,27 +109,5 @@ impl ConcreteVariantObject for Map<String, Value> {
 
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
         self.values()
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct JsonValueOps;
-
-impl ConcreteVariantOps for JsonValueOps {
-    type Value = Value;
-
-    fn literal_to_value(&self, literal: Literal) -> Option<Self::Value> {
-        match literal {
-            Literal::Int(v) => Some(Value::Number(v.into())),
-            Literal::UInt(v) => Some(Value::Number(v.into())),
-            Literal::Float(v) => Number::from_f64(v).map(Value::Number),
-            Literal::String(v) => Some(Value::String(v)),
-            Literal::Bool(b) => Some(Value::Bool(b)),
-            Literal::Null => Some(Value::Null),
-        }
-    }
-
-    fn check_equal_to(&self, left: &Self::Value, right: &Self::Value) -> bool {
-        left == right
     }
 }

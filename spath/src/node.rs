@@ -18,7 +18,7 @@ use std::slice::Iter;
 use crate::path::NormalizedPath;
 use crate::value::VariantValue;
 
-/// A list of nodes resulting from a SPath query.
+/// A list of nodes resulting from an SPath query.
 ///
 /// Each node within the list is a borrowed reference to the node in the original
 /// [`VariantValue`] that was queried.
@@ -144,7 +144,7 @@ impl<'a, T: VariantValue> LocatedNode<'a, T> {
     }
 }
 
-/// A list of [`LocatedNode`] resulting from a SPath query, along with their locations.
+/// A list of [`LocatedNode`] resulting from an SPath query, along with their locations.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct LocatedNodeList<'a, T: VariantValue>(Vec<LocatedNode<'a, T>>);
 

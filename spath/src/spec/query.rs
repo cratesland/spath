@@ -56,7 +56,7 @@ pub trait Queryable: sealed::Sealed {
     ) -> Vec<LocatedNode<'b, T>>;
 }
 
-/// Represents a SPath expression
+/// Represents an SPath expression
 #[derive(Debug, Clone, Default)]
 pub struct Query {
     /// The kind of query, root (`$`), or current (`@`)

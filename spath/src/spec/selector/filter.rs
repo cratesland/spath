@@ -16,7 +16,6 @@
 
 use super::{index::Index, name::Name, Selector};
 use crate::spec::functions::SPathValue;
-use crate::value::ConcreteVariantOps;
 use crate::{
     node::LocatedNode,
     path::NormalizedPath,
@@ -59,12 +58,12 @@ impl Queryable for Filter {
     fn query<'b, T: VariantValue>(&self, current: &'b T, root: &'b T) -> Vec<&'b T> {
         if let Some(list) = current.as_array() {
             list.iter()
-                .filter(|v| self.0.test_filter(v, root))
+                .filter(|v| self.0.test_filter(*v, root))
                 .collect()
         } else if let Some(obj) = current.as_object() {
             obj.iter()
                 .map(|(_, v)| v)
-                .filter(|v| self.0.test_filter(v, root))
+                .filter(|v| self.0.test_filter(*v, root))
                 .collect()
         } else {
             vec![]
@@ -238,21 +237,14 @@ impl TestFilter for ComparisonExpr {
         match self.op {
             ComparisonOperator::EqualTo => check_equal_to(&left, &right),
             ComparisonOperator::NotEqualTo => !check_equal_to(&left, &right),
-            ComparisonOperator::LessThan => {
-                check_same_type(&left, &right) && check_less_than(&left, &right)
-            }
+            ComparisonOperator::LessThan => check_less_than(&left, &right),
             ComparisonOperator::GreaterThan => {
-                check_same_type(&left, &right)
-                    && !check_less_than(&left, &right)
-                    && !check_equal_to(&left, &right)
+                !check_less_than(&left, &right) && !check_equal_to(&left, &right)
             }
             ComparisonOperator::LessThanEqualTo => {
-                check_same_type(&left, &right)
-                    && (check_less_than(&left, &right) || check_equal_to(&left, &right))
+                check_less_than(&left, &right) || check_equal_to(&left, &right)
             }
-            ComparisonOperator::GreaterThanEqualTo => {
-                check_same_type(&left, &right) && !check_less_than(&left, &right)
-            }
+            ComparisonOperator::GreaterThanEqualTo => !check_less_than(&left, &right),
         }
     }
 }
@@ -267,18 +259,19 @@ fn check_equal_to<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) 
         _ => return false,
     };
 
-    let ops = T::ops();
-    ops.check_equal_to(&left, &right)
+    left.is_equal_to(right)
 }
 
-fn check_same_type<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) -> bool {
+fn check_less_than<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) -> bool {
     let (left, right) = match (left, right) {
-        (SPathValue::Node(v1), SPathValue::Node(v2)) => (v1, v2),
-        (SPathValue::Node(v1), SPathValue::Value(v2)) => (v1, v2),
-        (SPathValue::Value(v1), SPathValue::Node(v2)) => (v1, v2),
+        (SPathValue::Node(v1), SPathValue::Node(v2)) => (*v1, *v2),
+        (SPathValue::Node(v1), SPathValue::Value(v2)) => (*v1, v2),
+        (SPathValue::Value(v1), SPathValue::Node(v2)) => (v1, *v2),
         (SPathValue::Value(v1), SPathValue::Value(v2)) => (v1, v2),
         _ => return false,
     };
+
+    left.is_less_than(right)
 }
 
 /// The comparison operator
@@ -339,24 +332,14 @@ impl Comparable {
         root: &'b T,
     ) -> SPathValue<'a, T> {
         match self {
-            Comparable::Literal(lit) => {
-                let ops = T::ops();
-                // SAFETY: value checked during bind
-                let value = ops.literal_to_value(lit.clone()).unwrap();
-                SPathValue::Value(value)
-            }
+            Comparable::Literal(lit) => match T::from_literal(lit.clone()) {
+                Some(v) => SPathValue::Value(v),
+                None => SPathValue::Nothing,
+            },
             Comparable::SingularQuery(sp) => match sp.eval_query(current, root) {
                 Some(v) => SPathValue::Node(v),
                 None => SPathValue::Nothing,
             },
-        }
-    }
-
-    #[doc(hidden)]
-    pub fn as_singular_path(&self) -> Option<&SingularQuery> {
-        match self {
-            Comparable::SingularQuery(sp) => Some(sp),
-            _ => None,
         }
     }
 }

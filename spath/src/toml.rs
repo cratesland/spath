@@ -15,20 +15,25 @@
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
-use crate::{ConcreteVariantOps, Literal};
-use num_cmp::NumCmp;
-use num_traits::ToPrimitive;
+use crate::{FromLiteral, Literal};
 use toml::Table;
 use toml::Value;
+
+impl FromLiteral for Value {
+    fn from_literal(literal: Literal) -> Option<Self> {
+        match literal {
+            Literal::Int(v) => Some(Value::Integer(v)),
+            Literal::Float(v) => Some(Value::Float(v)),
+            Literal::String(v) => Some(Value::String(v)),
+            Literal::Bool(v) => Some(Value::Boolean(v)),
+            Literal::Null => None,
+        }
+    }
+}
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Table;
-    type VariantOps = TomlValueOps;
-
-    fn ops() -> Self::VariantOps {
-        TomlValueOps
-    }
 
     fn is_null(&self) -> bool {
         // toml 1.0 does not have null
@@ -109,31 +114,5 @@ impl ConcreteVariantObject for Table {
 
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
         self.values()
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct TomlValueOps;
-
-impl ConcreteVariantOps for TomlValueOps {
-    type Value = Value;
-
-    fn literal_to_value(&self, literal: Literal) -> Option<Self::Value> {
-        match literal {
-            Literal::Int(v) => Some(Value::Integer(v)),
-            Literal::UInt(v) => v.to_i64().map(Value::Integer),
-            Literal::Float(v) => Some(Value::Float(v)),
-            Literal::String(v) => Some(Value::String(v)),
-            Literal::Bool(v) => Some(Value::Boolean(v)),
-            Literal::Null => None,
-        }
-    }
-
-    fn check_equal_to(&self, left: &Self::Value, right: &Self::Value) -> bool {
-        match (left, right) {
-            (Value::Integer(l), Value::Float(r)) => NumCmp::num_eq(l, r),
-            (Value::Float(l), Value::Integer(r)) => NumCmp::num_eq(l, r),
-            _ => left == right,
-        }
     }
 }

@@ -16,13 +16,11 @@
 
 use std::fmt;
 
-/// A literal variant value that can be represented in a SPath query
+/// A literal variant value that can be represented in an SPath query.
 #[derive(Debug, Clone)]
 pub enum Literal {
     /// 64-bit integer.
     Int(i64),
-    /// Unsigned 64-bit integer.
-    UInt(u64),
     /// 64-bit floating point number.
     Float(f64),
     /// UTF-8 string.
@@ -37,7 +35,6 @@ impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Literal::Int(n) => write!(f, "{n}"),
-            Literal::UInt(n) => write!(f, "{n}"),
             Literal::Float(n) => write!(f, "{n:?}"),
             Literal::String(s) => write!(f, "'{s}'"),
             Literal::Bool(b) => write!(f, "{b}"),
@@ -46,16 +43,19 @@ impl fmt::Display for Literal {
     }
 }
 
+/// A trait for converting a literal to a variant value.
+pub trait FromLiteral {
+    fn from_literal(literal: Literal) -> Option<Self>
+    where
+        Self: Sized;
+}
+
 /// A trait for any variant value.
-pub trait VariantValue {
+pub trait VariantValue: FromLiteral {
     /// The type of the array variant.
     type VariantArray: ConcreteVariantArray<Value = Self>;
     /// The type of the object variant.
     type VariantObject: ConcreteVariantObject<Value = Self>;
-    /// The type of operations over variant values.
-    type VariantOps: ConcreteVariantOps<Value = Self>;
-    /// Return the operations over variant values.
-    fn ops() -> Self::VariantOps;
     /// Whether the value is a null.
     fn is_null(&self) -> bool;
     /// Whether the value is a boolean.
@@ -70,6 +70,16 @@ pub trait VariantValue {
     fn as_array(&self) -> Option<&Self::VariantArray>;
     /// Convert the value to an object; [`None`] if the value is not an object.
     fn as_object(&self) -> Option<&Self::VariantObject>;
+
+    // §2.3.5.2.2 Comparisons
+    /// Whether self is less than another value.
+    fn is_less_than(&self, _other: &Self) -> bool {
+        todo!()
+    }
+    /// Whether self is equal to another value.
+    fn is_equal_to(&self, _other: &Self) -> bool {
+        todo!()
+    }
 }
 
 /// A trait for the concrete variant array type associated with a variant value.
@@ -102,14 +112,4 @@ pub trait ConcreteVariantObject {
     fn iter(&self) -> impl Iterator<Item = (&String, &Self::Value)>;
     /// An iterator over the values in the object.
     fn values(&self) -> impl Iterator<Item = &Self::Value>;
-}
-
-/// A trait for the concrete variant operations associated with a variant value.
-pub trait ConcreteVariantOps {
-    /// The type of the value to manipulate.
-    type Value: VariantValue<VariantOps = Self>;
-    /// Create a new value from a literal.
-    fn literal_to_value(&self, literal: Literal) -> Option<Self::Value>;
-    /// Whether the two values are equal.
-    fn check_equal_to(&self, left: &Self::Value, right: &Self::Value) -> bool;
 }
