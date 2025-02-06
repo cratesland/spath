@@ -12,9 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::parser::range::Range;
+
 /// Error type for SPath query string parsing errors
 #[derive(Debug, thiserror::Error)]
-#[error("{err}")]
+#[error("{message}")]
 pub struct ParseError {
-    err: String,
+    range: Range,
+    message: String,
+}
+
+impl ParseError {
+    pub fn new(range: Range, message: impl Into<String>) -> Self {
+        let message = message.into();
+        Self { range, message }
+    }
 }

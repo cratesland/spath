@@ -16,9 +16,6 @@
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-mod error;
-pub use error::*;
-
 mod node;
 pub use node::*;
 
@@ -28,13 +25,15 @@ pub use path::*;
 mod spath;
 pub use spath::*;
 
-pub mod spec;
+mod parser;
+use parser::ParseError;
 
 mod value;
 pub use value::*;
 
+pub mod spec;
+
 #[cfg(feature = "json")]
 mod json;
-mod parser;
 #[cfg(feature = "toml")]
 mod toml;
