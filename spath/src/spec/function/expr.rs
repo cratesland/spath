@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::VecDeque;
 use std::fmt;
 
 use crate::spec::function::types::FunctionArgType;
@@ -45,7 +44,7 @@ impl FunctionExpr {
         root: &'b T,
         registry: &R,
     ) -> SPathValue<'a, T> {
-        let args: VecDeque<SPathValue<T>> = self
+        let args: Vec<SPathValue<T>> = self
             .args
             .iter()
             .map(|a| a.evaluate(current, root, registry))
@@ -63,7 +62,7 @@ impl FunctionExpr {
         let f = registry
             .get(name.as_str())
             .ok_or(FunctionValidationError::Undefined { name })?;
-        f.validate(args.as_slice())
+        f.validate(args.as_slice(), registry)
     }
 }
 
@@ -166,24 +165,26 @@ pub enum FunctionValidationError {
         name: String,
     },
     /// Mismatch in number of function arguments
-    #[error("expected {expected} args, but received {received}")]
+    #[error("function {name} expects {expected} args, but received {received}")]
     NumberOfArgsMismatch {
-        /// Expected number of arguments
+        /// Function name.
+        name: String,
+        /// Expected number of arguments.
         expected: usize,
-        /// Received number of arguments
+        /// Received number of arguments.
         received: usize,
     },
     /// The type of received argument does not match the function definition
     #[error("in function {name}, in argument position {position}, expected a type that converts to {expected}, received {received}"
     )]
     MismatchTypeKind {
-        /// Function name
+        /// Function name.
         name: String,
-        /// Expected type
+        /// Expected type.
         expected: SPathType,
-        /// Received type
+        /// Received type.
         received: FunctionArgType,
-        /// Argument position
+        /// Argument position.
         position: usize,
     },
     #[error("function with incorrect return type used")]

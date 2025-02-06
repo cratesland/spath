@@ -15,8 +15,6 @@
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-use crate::spec::function::types::FunctionArgType;
-use crate::spec::function::types::SPathType;
 use crate::NodeList;
 use crate::VariantValue;
 
@@ -30,6 +28,41 @@ pub enum SPathValue<'a, T: VariantValue> {
     Nothing,
 }
 
+impl<'a, T: VariantValue> SPathValue<'a, T> {
+    /// Convert self to a node list if possible.
+    pub fn into_nodes(self) -> Option<NodesType<'a, T>> {
+        match self {
+            SPathValue::Nodes(nodes) => Some(nodes.into()),
+            _ => None,
+        }
+    }
+
+    /// Convert self to a logical value if possible.
+    ///
+    /// §2.4.2. Type Conversion
+    ///
+    /// If the nodelist contains one or more nodes, the conversion result is LogicalTrue.
+    ///
+    /// If the nodelist is empty, the conversion result is LogicalFalse.
+    pub fn into_logical(self) -> Option<LogicalType> {
+        match self {
+            SPathValue::Logical(logical) => Some(logical),
+            SPathValue::Nodes(nodes) => Some(LogicalType::from(!nodes.is_empty())),
+            _ => None,
+        }
+    }
+
+    /// Convert self to a singular optional value if possible.
+    pub fn into_value(self) -> Option<ValueType<'a, T>> {
+        match self {
+            SPathValue::Value(value) => Some(ValueType::Value(value)),
+            SPathValue::Node(node) => Some(ValueType::Node(node)),
+            SPathValue::Nothing => Some(ValueType::Nothing),
+            _ => None,
+        }
+    }
+}
+
 /// SPath value representing a node list.
 ///
 /// This is a thin wrapper around a [`NodeList`], and generally represents the result of an SPath
@@ -38,16 +71,6 @@ pub enum SPathValue<'a, T: VariantValue> {
 pub struct NodesType<'a, T: VariantValue>(NodeList<'a, T>);
 
 impl<'a, T: VariantValue> NodesType<'a, T> {
-    #[doc(hidden)]
-    pub const fn spath_type() -> SPathType {
-        SPathType::Nodes
-    }
-
-    #[doc(hidden)]
-    pub const fn function_type() -> FunctionArgType {
-        FunctionArgType::NodeList
-    }
-
     /// Extract all inner nodes as a vector
     pub fn all(self) -> Vec<&'a T> {
         self.0.all()
@@ -99,18 +122,6 @@ pub enum LogicalType {
     False,
 }
 
-impl LogicalType {
-    /// Returns the spath type.
-    pub const fn spath_type() -> SPathType {
-        SPathType::Logical
-    }
-
-    #[doc(hidden)]
-    pub const fn function_type() -> FunctionArgType {
-        FunctionArgType::Logical
-    }
-}
-
 impl From<LogicalType> for bool {
     fn from(value: LogicalType) -> Self {
         match value {
@@ -145,16 +156,6 @@ pub enum ValueType<'a, T: VariantValue> {
 }
 
 impl<T: VariantValue> ValueType<'_, T> {
-    #[doc(hidden)]
-    pub const fn spath_type() -> SPathType {
-        SPathType::Value
-    }
-
-    #[doc(hidden)]
-    pub const fn function_type() -> FunctionArgType {
-        FunctionArgType::Value
-    }
-
     /// Convert to a reference of a variant value if possible.
     pub fn as_value(&self) -> Option<&T> {
         match self {

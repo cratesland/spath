@@ -60,12 +60,16 @@ pub trait VariantValue: FromLiteral {
     fn is_null(&self) -> bool;
     /// Whether the value is a boolean.
     fn is_boolean(&self) -> bool;
+    /// Whether the value is a number.
+    fn is_string(&self) -> bool;
     /// Whether the value is an array.
     fn is_array(&self) -> bool;
     /// Whether the value is an object.
     fn is_object(&self) -> bool;
     /// Convert the value to a bool; [`None`] if the value is not an array.
     fn as_bool(&self) -> Option<bool>;
+    /// Convert the value to a str; [`None`] if the value is not a string.
+    fn as_str(&self) -> Option<&str>;
     /// Convert the value to an array; [`None`] if the value is not an array.
     fn as_array(&self) -> Option<&Self::VariantArray>;
     /// Convert the value to an object; [`None`] if the value is not an object.

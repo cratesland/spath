@@ -51,6 +51,10 @@ impl VariantValue for Value {
         self.is_bool()
     }
 
+    fn is_string(&self) -> bool {
+        self.is_str()
+    }
+
     fn is_array(&self) -> bool {
         self.is_array()
     }
@@ -61,6 +65,10 @@ impl VariantValue for Value {
 
     fn as_bool(&self) -> Option<bool> {
         self.as_bool()
+    }
+
+    fn as_str(&self) -> Option<&str> {
+        self.as_str()
     }
 
     fn as_array(&self) -> Option<&Self::VariantArray> {

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::VecDeque;
-
 use crate::VariantValue;
+
+pub mod builtin;
 
 mod expr;
 pub use expr::*;
@@ -28,13 +28,46 @@ pub use value::*;
 #[doc(hidden)]
 pub trait Function {
     type Value: VariantValue;
+    /// The name of the function.
     fn name(&self) -> &str;
+    /// The declared types of function's arguments.
+    fn argument_types(&self) -> Vec<SPathType>;
+    /// The return type of the function.
     fn result_type(&self) -> FunctionArgType;
-    fn validate(&self, args: &[FunctionExprArg]) -> Result<(), FunctionValidationError>;
-    fn evaluate<'a>(
+    /// Evaluate the function with args.
+    fn evaluate<'a>(&self, args: Vec<SPathValue<'a, Self::Value>>) -> SPathValue<'a, Self::Value>;
+
+    /// Validate the type of function arguments.
+    fn validate<R: FunctionRegistry<Value = Self::Value, Function = Self>>(
         &self,
-        args: VecDeque<SPathValue<'a, Self::Value>>,
-    ) -> SPathValue<'a, Self::Value>;
+        args: &[FunctionExprArg],
+        registry: &R,
+    ) -> Result<(), FunctionValidationError> {
+        let argument_types = self.argument_types();
+
+        if args.len() != argument_types.len() {
+            return Err(FunctionValidationError::NumberOfArgsMismatch {
+                name: self.name().to_string(),
+                expected: 1,
+                received: args.len(),
+            });
+        }
+
+        for (i, arg) in args.iter().enumerate() {
+            let ty = argument_types[i];
+            let kind = arg.as_type_kind(registry)?;
+            if !kind.converts_to(ty) {
+                return Err(FunctionValidationError::MismatchTypeKind {
+                    name: self.name().to_string(),
+                    expected: ty,
+                    received: kind,
+                    position: i,
+                });
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[doc(hidden)]
