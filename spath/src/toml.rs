@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use toml::Table;
+use toml::Value;
+
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
-use crate::{FromLiteral, Literal};
-use toml::Table;
-use toml::Value;
+use crate::FromLiteral;
+use crate::Literal;
 
 impl FromLiteral for Value {
     fn from_literal(literal: Literal) -> Option<Self> {

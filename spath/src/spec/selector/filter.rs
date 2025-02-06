@@ -14,21 +14,30 @@
 
 //! Types representing filter selectors in SPath.
 
-use super::{index::Index, name::Name, Selector};
-use crate::spec::functions::SPathValue;
-use crate::{
-    node::LocatedNode,
-    path::NormalizedPath,
-    spec::{
-        query::{Query, QueryKind, Queryable},
-        segment::{QuerySegment, Segment},
-    },
-    ConcreteVariantArray, ConcreteVariantObject, Literal, VariantValue,
-};
 use std::fmt;
 
+use super::index::Index;
+use super::name::Name;
+use super::Selector;
+use crate::node::LocatedNode;
+use crate::path::NormalizedPath;
+use crate::spec::functions::SPathValue;
+use crate::spec::query::Query;
+use crate::spec::query::QueryKind;
+use crate::spec::query::Queryable;
+use crate::spec::segment::QuerySegment;
+use crate::spec::segment::Segment;
+use crate::ConcreteVariantArray;
+use crate::ConcreteVariantObject;
+use crate::Literal;
+use crate::VariantValue;
+
 mod sealed {
-    use super::{BasicExpr, ComparisonExpr, ExistExpr, LogicalAndExpr, LogicalOrExpr};
+    use super::BasicExpr;
+    use super::ComparisonExpr;
+    use super::ExistExpr;
+    use super::LogicalAndExpr;
+    use super::LogicalOrExpr;
 
     pub trait Sealed {}
     impl Sealed for LogicalOrExpr {}
@@ -79,12 +88,12 @@ impl Queryable for Filter {
         if let Some(list) = current.as_array() {
             list.iter()
                 .enumerate()
-                .filter(|(_, v)| self.0.test_filter(v, root))
+                .filter(|(_, v)| self.0.test_filter(*v, root))
                 .map(|(i, v)| LocatedNode::new(parent.clone_and_push(i), v))
                 .collect()
         } else if let Some(obj) = current.as_object() {
             obj.iter()
-                .filter(|(_, v)| self.0.test_filter(v, root))
+                .filter(|(_, v)| self.0.test_filter(*v, root))
                 .map(|(k, v)| LocatedNode::new(parent.clone_and_push(k), v))
                 .collect()
         } else {

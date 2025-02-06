@@ -35,6 +35,11 @@ impl Name {
     pub fn new(name: String) -> Self {
         Self { name }
     }
+
+    /// Get as a string slice
+    pub fn as_str(&self) -> &str {
+        &self.name
+    }
 }
 
 impl fmt::Display for Name {

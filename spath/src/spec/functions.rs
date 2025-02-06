@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{NodeList, VariantValue};
 use std::fmt;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
+use std::ops::DerefMut;
+
+use crate::NodeList;
+use crate::VariantValue;
 
 /// The type system of SPath values.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -54,11 +57,14 @@ pub enum FunctionArgType {
     Literal,
     /// Denotes a borrowed variant value from a singular query
     SingularQuery,
-    /// Denotes a literal or borrowed variant value, used to represent functions that return [`ValueType`]
+    /// Denotes a literal or borrowed variant value, used to represent functions that return
+    /// [`ValueType`]
     Value,
-    /// Denotes a node list, either from a filter query argument, or a function that returns [`NodesType`]
+    /// Denotes a node list, either from a filter query argument, or a function that returns
+    /// [`NodesType`]
     Nodelist,
-    /// Denotes a logical, either from a logical expression, or from a function that returns [`LogicalType`]
+    /// Denotes a logical, either from a logical expression, or from a function that returns
+    /// [`LogicalType`]
     Logical,
 }
 
