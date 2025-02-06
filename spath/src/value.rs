@@ -73,13 +73,9 @@ pub trait VariantValue: FromLiteral {
 
     // §2.3.5.2.2 Comparisons
     /// Whether self is less than another value.
-    fn is_less_than(&self, _other: &Self) -> bool {
-        todo!()
-    }
+    fn is_less_than(&self, other: &Self) -> bool;
     /// Whether self is equal to another value.
-    fn is_equal_to(&self, _other: &Self) -> bool {
-        todo!()
-    }
+    fn is_equal_to(&self, other: &Self) -> bool;
 }
 
 /// A trait for the concrete variant array type associated with a variant value.

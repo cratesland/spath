@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use num_cmp::NumCmp;
 use toml::Table;
 use toml::Value;
 
@@ -68,6 +69,23 @@ impl VariantValue for Value {
 
     fn as_object(&self) -> Option<&Self::VariantObject> {
         self.as_table()
+    }
+
+    fn is_less_than(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Integer(l), Value::Float(r)) => NumCmp::num_lt(*l, *r),
+            (Value::Float(l), Value::Integer(r)) => NumCmp::num_lt(*l, *r),
+            (Value::String(l), Value::String(r)) => l < r,
+            _ => false,
+        }
+    }
+
+    fn is_equal_to(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Integer(l), Value::Float(r)) => NumCmp::num_eq(*l, *r),
+            (Value::Float(l), Value::Integer(r)) => NumCmp::num_eq(*l, *r),
+            _ => self == other,
+        }
     }
 }
 

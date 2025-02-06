@@ -65,6 +65,41 @@ impl VariantValue for Value {
     fn as_object(&self) -> Option<&Self::VariantObject> {
         self.as_object()
     }
+
+    fn is_less_than(&self, other: &Self) -> bool {
+        fn number_less_than(left: &Number, right: &Number) -> bool {
+            if let (Some(l), Some(r)) = (left.as_i128(), right.as_i128()) {
+                l < r
+            } else if let (Some(l), Some(r)) = (left.as_f64(), right.as_f64()) {
+                l < r
+            } else {
+                false
+            }
+        }
+
+        match (self, other) {
+            (Value::Number(n1), Value::Number(n2)) => number_less_than(n1, n2),
+            (Value::String(s1), Value::String(s2)) => s1 < s2,
+            _ => false,
+        }
+    }
+
+    fn is_equal_to(&self, other: &Self) -> bool {
+        fn number_equal_to(left: &Number, right: &Number) -> bool {
+            if let (Some(l), Some(r)) = (left.as_i128(), right.as_i128()) {
+                l == r
+            } else if let (Some(l), Some(r)) = (left.as_f64(), right.as_f64()) {
+                l == r
+            } else {
+                false
+            }
+        }
+
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => number_equal_to(a, b),
+            _ => self == other,
+        }
+    }
 }
 
 impl ConcreteVariantArray for Vec<Value> {
