@@ -16,7 +16,6 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::ops::Deref;
 use std::ops::DerefMut;
-use std::sync::Arc;
 
 use crate::spec::query::Query;
 use crate::spec::query::Queryable;
@@ -70,7 +69,7 @@ pub enum FunctionArgType {
     Value,
     /// Denotes a node list, either from a filter query argument, or a function that returns
     /// [`NodesType`]
-    Nodelist,
+    NodeList,
     /// Denotes a logical, either from a logical expression, or from a function that returns
     /// [`LogicalType`]
     Logical,
@@ -82,7 +81,7 @@ impl fmt::Display for FunctionArgType {
             FunctionArgType::Literal => write!(f, "literal"),
             FunctionArgType::SingularQuery => write!(f, "singular query"),
             FunctionArgType::Value => write!(f, "value type"),
-            FunctionArgType::Nodelist => write!(f, "nodes type"),
+            FunctionArgType::NodeList => write!(f, "node list type"),
             FunctionArgType::Logical => write!(f, "logical type"),
         }
     }
@@ -99,7 +98,7 @@ impl FunctionArgType {
                 FunctionArgType::SingularQuery,
                 SPathType::Value | SPathType::Nodes | SPathType::Logical
             ) | (
-                FunctionArgType::Nodelist,
+                FunctionArgType::NodeList,
                 SPathType::Nodes | SPathType::Logical
             ) | (FunctionArgType::Logical, SPathType::Logical),
         )
@@ -121,7 +120,7 @@ impl<'a, T: VariantValue> NodesType<'a, T> {
 
     #[doc(hidden)]
     pub const fn function_type() -> FunctionArgType {
-        FunctionArgType::Nodelist
+        FunctionArgType::NodeList
     }
 
     /// Extract all inner nodes as a vector
@@ -263,90 +262,62 @@ pub enum SPathValue<'a, T: VariantValue> {
 }
 
 #[doc(hidden)]
-pub type Validator<T> =
-    Arc<dyn Fn(&[FunctionExprArg<T>]) -> Result<(), FunctionValidationError> + Send + Sync>;
-
-#[doc(hidden)]
-pub type Evaluator<T> =
-    Arc<dyn for<'a> Fn(VecDeque<SPathValue<'a, T>>) -> SPathValue<'a, T> + Sync + Send>;
-
-#[doc(hidden)]
-pub struct Function<T: VariantValue> {
-    pub name: &'static str,
-    pub result_type: FunctionArgType,
-    pub validator: Validator<T>,
-    pub evaluator: Evaluator<T>,
+pub trait Function {
+    type Value: VariantValue;
+    fn name(&self) -> &str;
+    fn result_type(&self) -> FunctionArgType;
+    fn validate(&self, args: &[FunctionExprArg]) -> Result<(), FunctionValidationError>;
+    fn evaluate<'a>(
+        &self,
+        args: VecDeque<SPathValue<'a, Self::Value>>,
+    ) -> SPathValue<'a, Self::Value>;
 }
 
-impl<T: VariantValue> fmt::Debug for Function<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Function")
-            .field("name", &self.name)
-            .field("result_type", &self.result_type)
-            .finish()
-    }
-}
-
-impl<T: VariantValue> Function<T> {
-    pub const fn new(
-        name: &'static str,
-        result_type: FunctionArgType,
-        evaluator: Evaluator<T>,
-        validator: Validator<T>,
-    ) -> Self {
-        Self {
-            name,
-            result_type,
-            evaluator,
-            validator,
-        }
-    }
+#[doc(hidden)]
+pub trait FunctionRegistry {
+    type Value: VariantValue;
+    type Function: Function<Value = Self::Value>;
+    fn get(&self, name: &str) -> Option<Self::Function>;
 }
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct FunctionExpr<V, T: VariantValue> {
+pub struct FunctionExpr {
     pub name: String,
-    pub args: Vec<FunctionExprArg<T>>,
+    pub args: Vec<FunctionExprArg>,
     pub return_type: FunctionArgType,
-    pub validated: V,
 }
 
-impl<T: VariantValue> FunctionExpr<Validated<T>, T> {
-    pub fn evaluate<'a, 'b: 'a>(&'a self, current: &'b T, root: &'b T) -> SPathValue<'a, T> {
+impl FunctionExpr {
+    pub fn evaluate<'a, 'b: 'a, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &'a self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> SPathValue<'a, T> {
         let args: VecDeque<SPathValue<T>> = self
             .args
             .iter()
-            .map(|a| a.evaluate(current, root))
+            .map(|a| a.evaluate(current, root, registry))
             .collect();
-        (self.validated.evaluator)(args)
+        // SAFETY: upon evaluation, the function is guaranteed to be validated
+        let f = registry.get(self.name.as_str()).unwrap();
+        f.evaluate(args)
     }
-}
 
-impl<T: VariantValue> FunctionExpr<NotValidated, T> {
-    pub fn validate(
+    pub fn validate<R: FunctionRegistry>(
         name: String,
-        args: Vec<FunctionExprArg<T>>,
-        registry: FunctionRegistry<T>,
-    ) -> Result<FunctionExpr<Validated<T>, T>, FunctionValidationError> {
-        for f in registry.functions.iter() {
-            if f.name == name {
-                (f.validator)(args.as_slice())?;
-                return Ok(FunctionExpr {
-                    name,
-                    args,
-                    return_type: f.result_type,
-                    validated: Validated {
-                        evaluator: f.evaluator.clone(),
-                    },
-                });
-            }
-        }
-        Err(FunctionValidationError::Undefined { name })
+        args: Vec<FunctionExprArg>,
+        registry: &R,
+    ) -> Result<(), FunctionValidationError> {
+        let f = registry
+            .get(name.as_str())
+            .ok_or(FunctionValidationError::Undefined { name })?;
+        f.validate(args.as_slice())
     }
 }
 
-impl<V, T: VariantValue> fmt::Display for FunctionExpr<V, T> {
+impl fmt::Display for FunctionExpr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{name}(", name = self.name)?;
         for (i, arg) in self.args.iter().enumerate() {
@@ -362,36 +333,15 @@ impl<V, T: VariantValue> fmt::Display for FunctionExpr<V, T> {
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct NotValidated;
-
-#[doc(hidden)]
-pub struct Validated<T: VariantValue> {
-    pub evaluator: Evaluator<T>,
-}
-
-impl<T: VariantValue> fmt::Debug for Validated<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Validated").finish()
-    }
-}
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct FunctionRegistry<T: VariantValue> {
-    functions: Vec<Function<T>>,
-}
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub enum FunctionExprArg<T: VariantValue> {
+pub enum FunctionExprArg {
     Literal(Literal),
     SingularQuery(SingularQuery),
     FilterQuery(Query),
     LogicalExpr(LogicalOrExpr),
-    FunctionExpr(FunctionExpr<Validated<T>, T>),
+    FunctionExpr(FunctionExpr),
 }
 
-impl<T: VariantValue> fmt::Display for FunctionExprArg<T> {
+impl fmt::Display for FunctionExprArg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FunctionExprArg::Literal(lit) => write!(f, "{lit}"),
@@ -403,8 +353,13 @@ impl<T: VariantValue> fmt::Display for FunctionExprArg<T> {
     }
 }
 
-impl<T: VariantValue> FunctionExprArg<T> {
-    fn evaluate<'a, 'b: 'a>(&'a self, current: &'b T, root: &'b T) -> SPathValue<'a, T> {
+impl FunctionExprArg {
+    fn evaluate<'a, 'b: 'a, T: VariantValue, R: FunctionRegistry<Value = T>>(
+        &'a self,
+        current: &'b T,
+        root: &'b T,
+        registry: &R,
+    ) -> SPathValue<'a, T> {
         match self {
             FunctionExprArg::Literal(lit) => match T::from_literal(lit.clone()) {
                 None => SPathValue::Nothing,
@@ -422,13 +377,13 @@ impl<T: VariantValue> FunctionExprArg<T> {
                 true => SPathValue::Logical(LogicalType::True),
                 false => SPathValue::Logical(LogicalType::False),
             },
-            FunctionExprArg::FunctionExpr(f) => f.evaluate(current, root),
+            FunctionExprArg::FunctionExpr(f) => f.evaluate(current, root, registry),
         }
     }
 
-    pub fn as_type_kind(
+    pub fn as_type_kind<R: FunctionRegistry>(
         &self,
-        registry: FunctionRegistry<T>,
+        registry: &R,
     ) -> Result<FunctionArgType, FunctionValidationError> {
         match self {
             FunctionExprArg::Literal(_) => Ok(FunctionArgType::Literal),
@@ -437,20 +392,16 @@ impl<T: VariantValue> FunctionExprArg<T> {
                 if query.is_singular() {
                     Ok(FunctionArgType::SingularQuery)
                 } else {
-                    Ok(FunctionArgType::Nodelist)
+                    Ok(FunctionArgType::NodeList)
                 }
             }
             FunctionExprArg::LogicalExpr(_) => Ok(FunctionArgType::Logical),
-            FunctionExprArg::FunctionExpr(func) => {
-                for f in registry.functions.iter() {
-                    if f.name == func.name.as_str() {
-                        return Ok(f.result_type);
-                    }
-                }
-                Err(FunctionValidationError::Undefined {
+            FunctionExprArg::FunctionExpr(func) => registry
+                .get(func.name.as_str())
+                .map(|f| f.result_type())
+                .ok_or_else(|| FunctionValidationError::Undefined {
                     name: func.name.to_string(),
-                })
-            }
+                }),
         }
     }
 }
