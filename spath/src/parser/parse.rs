@@ -13,8 +13,10 @@
 // limitations under the License.
 
 use winnow::error::ContextError;
+use winnow::Parser;
 
 use crate::parser::input::TokenSlice;
+use crate::parser::token::TokenKind::*;
 use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 use crate::VariantValue;
@@ -32,7 +34,9 @@ impl<T: VariantValue, R: FunctionRegistry<Value = T>> ParseContext<T, R> {
         self.registry
     }
 
-    pub fn parse_query_main(&self, _input: TokenSlice) -> Result<Query, ContextError> {
+    pub fn parse_query_main(&self, mut input: TokenSlice) -> Result<Query, ContextError> {
+        let x = ("$", EOI).parse_next(&mut input);
+        x.expect("TODO: panic message");
         Ok(Query::default())
     }
 }

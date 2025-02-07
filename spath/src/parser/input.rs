@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use winnow::error::ContextError;
+use winnow::token::literal;
+use winnow::Parser;
+
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
 
@@ -26,5 +30,11 @@ impl PartialEq<&str> for Token<'_> {
 impl PartialEq<TokenKind> for Token<'_> {
     fn eq(&self, other: &TokenKind) -> bool {
         self.kind == *other
+    }
+}
+
+impl<'a> Parser<TokenSlice<'a>, &'a Token<'a>, ContextError> for TokenKind {
+    fn parse_next(&mut self, input: &mut TokenSlice<'a>) -> Result<&'a Token<'a>, ContextError> {
+        literal(*self).parse_next(input).map(|t| &t[0])
     }
 }
