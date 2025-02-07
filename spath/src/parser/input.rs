@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod error;
-mod input;
-mod parse;
-mod range;
-mod runner;
-mod token;
+use crate::parser::token::Token;
+use crate::parser::token::TokenKind;
 
-pub use runner::run_parser;
+pub type TokenSlice<'a> = winnow::stream::TokenSlice<'a, Token<'a>>;
+
+impl PartialEq<&str> for Token<'_> {
+    fn eq(&self, other: &&str) -> bool {
+        self.text() == *other
+    }
+}
+
+impl PartialEq<TokenKind> for Token<'_> {
+    fn eq(&self, other: &TokenKind) -> bool {
+        self.kind == *other
+    }
+}

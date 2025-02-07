@@ -13,6 +13,8 @@
 // limitations under the License.
 
 use crate::parser::error::Error;
+use crate::parser::input::TokenSlice;
+use crate::parser::parse::ParseContext;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
 use crate::spec::function::FunctionRegistry;
@@ -24,12 +26,19 @@ pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser<T, R>(source: &str, _registry: &R) -> Result<Query, ParseError>
+pub fn run_parser<T, R>(source: &str, registry: R) -> Result<(Query, R), ParseError>
 where
     T: VariantValue,
     R: FunctionRegistry<Value = T>,
 {
+    let context = ParseContext::new(registry);
+
     let tokens = run_tokenizer(source).map_err(|err| ParseError(err.to_string()))?;
-    println!("{tokens:?}");
-    Err(ParseError("unimplemented".to_string()))
+    let input = TokenSlice::new(&tokens);
+
+    let query = context
+        .parse_query_main(input)
+        .map_err(|err| ParseError(err.to_string()))?;
+    let registry = context.take_back_registry();
+    Ok((query, registry))
 }

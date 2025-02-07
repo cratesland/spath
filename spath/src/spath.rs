@@ -31,8 +31,8 @@ pub struct SPath<T: VariantValue, R: FunctionRegistry<Value = T>> {
 
 impl<T: VariantValue, R: FunctionRegistry<Value = T>> SPath<T, R> {
     pub fn parse_with_registry(query: &str, registry: R) -> Result<Self, ParseError> {
-        let query = run_parser(query, &registry)?;
-        Ok(SPath { query, registry })
+        let (query, registry) = run_parser(query, registry)?;
+        Ok(Self { query, registry })
     }
 
     pub fn query<'b>(&self, value: &'b T) -> NodeList<'b, T> {
