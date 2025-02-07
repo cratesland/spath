@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use winnow::error::ContextError;
 use winnow::Parser;
 
+use crate::parser::error::RefineError;
+use crate::parser::input::text;
 use crate::parser::input::TokenSlice;
 use crate::parser::token::TokenKind::*;
 use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 use crate::VariantValue;
 
+#[derive(Debug)]
 pub struct ParseContext<T: VariantValue, R: FunctionRegistry<Value = T>> {
     registry: R,
 }
@@ -34,9 +36,13 @@ impl<T: VariantValue, R: FunctionRegistry<Value = T>> ParseContext<T, R> {
         self.registry
     }
 
-    pub fn parse_query_main(&self, mut input: TokenSlice) -> Result<Query, ContextError> {
-        let x = ("$", EOI).parse_next(&mut input);
-        x.expect("TODO: panic message");
-        Ok(Query::default())
+    pub fn parse_query_main(&self, mut input: TokenSlice) -> Result<Query, RefineError> {
+        (self.parse_root_query(), EOI)
+            .map(|(query, _)| query)
+            .parse_next(&mut input)
+    }
+
+    fn parse_root_query<'a>(&self) -> impl Parser<TokenSlice<'a>, Query, RefineError> {
+        move |input: &mut TokenSlice<'a>| text("$").map(|_| Query::default()).parse_next(input)
     }
 }

@@ -29,7 +29,7 @@ pub struct Token<'a> {
 
 impl fmt::Debug for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}({:?}: {})", self.kind, self.span, self.text())
+        write!(f, "{:?}({:?})", self.kind, self.span)
     }
 }
 

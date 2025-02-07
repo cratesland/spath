@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use winnow::error::ContextError;
+
 use crate::parser::range::Range;
+
+// TODO(tisonkun): Use `Error` directly later for better error reporting.
+pub type RefineError = ContextError;
 
 /// A parsing error with source span and message.
 #[derive(Debug, thiserror::Error)]
