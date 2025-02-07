@@ -14,6 +14,7 @@
 
 use std::fmt;
 
+use crate::parser::run_parser;
 use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 use crate::spec::query::Queryable;
@@ -29,8 +30,9 @@ pub struct SPath<T: VariantValue, R: FunctionRegistry<Value = T>> {
 }
 
 impl<T: VariantValue, R: FunctionRegistry<Value = T>> SPath<T, R> {
-    pub fn parse_with_registry(_query: &str, _registry: R) -> Result<Self, ParseError> {
-        todo!()
+    pub fn parse_with_registry(query: &str, registry: R) -> Result<Self, ParseError> {
+        let query = run_parser(query, &registry)?;
+        Ok(SPath { query, registry })
     }
 
     pub fn query<'b>(&self, value: &'b T) -> NodeList<'b, T> {

@@ -16,9 +16,6 @@
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-mod error;
-pub use error::*;
-
 mod node;
 pub use node::*;
 
@@ -38,3 +35,8 @@ mod json;
 mod parser;
 #[cfg(feature = "toml")]
 mod toml;
+
+/// An error that can occur during parsing the SPath query.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct ParseError(pub String);
