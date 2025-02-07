@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod common;
+
+use common::manifest_dir;
+use googletest::assert_that;
+use googletest::matchers::eq;
 use insta::assert_compact_json_snapshot;
+use spath::NodeList;
+use spath::ParseError;
 use spath::SPath;
 use toml::Value;
-mod common;
-use common::manifest_dir;
+
+use crate::common::EmptyTomlFunctionRegistry;
 
 fn toml_testdata(filename: &str) -> Value {
     let path = manifest_dir().join("testdata").join(filename);
@@ -24,23 +31,26 @@ fn toml_testdata(filename: &str) -> Value {
     toml::from_str(&content).unwrap()
 }
 
-fn eval_spath(spath: &str, value: &Value) -> Option<Value> {
-    let spath = SPath::new(spath).unwrap();
-    spath.eval(value)
+fn eval_spath<'a>(spath: &str, value: &'a Value) -> Result<NodeList<'a, Value>, ParseError> {
+    let spath = SPath::parse_with_registry(spath, EmptyTomlFunctionRegistry)?;
+    Ok(spath.query(value))
 }
 
 #[test]
 fn test_root_identical() {
     let value = toml_testdata("learn-toml-in-y-minutes.toml");
     let result = eval_spath("$", &value).unwrap();
-    assert_eq!(result, value);
+    let result = result.exactly_one().unwrap();
+    assert_that!(result, eq(&value));
 }
 
 #[test]
 fn test_casual() {
     let value = toml_testdata("learn-toml-in-y-minutes.toml");
     let result = eval_spath(r#"$..["name"]"#, &value).unwrap();
+    let result = result.all();
     assert_compact_json_snapshot!(result, @r#"["Nail", "array of table"]"#);
     let result = eval_spath(r#"$..[1]"#, &value).unwrap();
+    let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[{}, "is", ["all", "strings", "are the same", "type"], "strings", 2.4, "different", "are", 2]"#);
 }

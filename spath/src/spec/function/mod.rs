@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt;
+
 use crate::VariantValue;
 
 pub mod builtin;
@@ -25,20 +27,63 @@ pub use types::*;
 mod value;
 pub use value::*;
 
-#[doc(hidden)]
-pub trait Function {
-    type Value: VariantValue;
+pub type Evaluator<T> = Box<dyn Fn(Vec<SPathValue<T>>) -> SPathValue<T>>;
+
+pub struct Function<T: VariantValue> {
+    name: &'static str,
+    argument_types: Vec<SPathType>,
+    result_type: SPathType,
+    evaluator: Evaluator<T>,
+}
+
+impl<T: VariantValue> fmt::Debug for Function<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Function")
+            .field("name", &self.name)
+            .field("argument_types", &self.argument_types)
+            .field("result_type", &self.result_type)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<T: VariantValue> Function<T> {
+    /// Create a new function instance.
+    pub fn new(
+        name: &'static str,
+        argument_types: Vec<SPathType>,
+        result_type: SPathType,
+        evaluator: Evaluator<T>,
+    ) -> Self {
+        Self {
+            name,
+            argument_types,
+            result_type,
+            evaluator,
+        }
+    }
+
     /// The name of the function.
-    fn name(&self) -> &str;
+    pub fn name(&self) -> &str {
+        self.name
+    }
+
     /// The declared types of function's arguments.
-    fn argument_types(&self) -> Vec<SPathType>;
+    pub fn argument_types(&self) -> &[SPathType] {
+        self.argument_types.as_slice()
+    }
+
     /// The return type of the function.
-    fn result_type(&self) -> FunctionArgType;
+    pub fn result_type(&self) -> SPathType {
+        self.result_type
+    }
+
     /// Evaluate the function with args.
-    fn evaluate<'a>(&self, args: Vec<SPathValue<'a, Self::Value>>) -> SPathValue<'a, Self::Value>;
+    pub fn evaluate<'a>(&self, args: Vec<SPathValue<'a, T>>) -> SPathValue<'a, T> {
+        (self.evaluator)(args)
+    }
 
     /// Validate the type of function arguments.
-    fn validate<R: FunctionRegistry<Value = Self::Value, Function = Self>>(
+    fn validate<R: FunctionRegistry<Value = T>>(
         &self,
         args: &[FunctionExprArg],
         registry: &R,
@@ -73,6 +118,5 @@ pub trait Function {
 #[doc(hidden)]
 pub trait FunctionRegistry {
     type Value: VariantValue;
-    type Function: Function<Value = Self::Value>;
-    fn get(&self, name: &str) -> Option<Self::Function>;
+    fn get(&self, name: &str) -> Option<Function<Self::Value>>;
 }

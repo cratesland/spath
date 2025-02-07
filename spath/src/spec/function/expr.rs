@@ -18,7 +18,6 @@ use crate::spec::function::types::FunctionArgType;
 use crate::spec::function::types::SPathType;
 use crate::spec::function::value::LogicalType;
 use crate::spec::function::value::SPathValue;
-use crate::spec::function::Function;
 use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 use crate::spec::query::Queryable;
@@ -147,7 +146,7 @@ impl FunctionExprArg {
             FunctionExprArg::LogicalExpr(_) => Ok(FunctionArgType::Logical),
             FunctionExprArg::FunctionExpr(func) => registry
                 .get(func.name.as_str())
-                .map(|f| f.result_type())
+                .map(|f| f.result_type().as_function_arg_type())
                 .ok_or_else(|| FunctionValidationError::Undefined {
                     name: func.name.to_string(),
                 }),

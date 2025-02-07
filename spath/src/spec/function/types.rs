@@ -25,6 +25,17 @@ pub enum SPathType {
     Logical,
 }
 
+impl SPathType {
+    /// Convert the SPath type to a function argument type.
+    pub fn as_function_arg_type(&self) -> FunctionArgType {
+        match self {
+            SPathType::Nodes => FunctionArgType::NodeList,
+            SPathType::Value => FunctionArgType::Value,
+            SPathType::Logical => FunctionArgType::Logical,
+        }
+    }
+}
+
 impl fmt::Display for SPathType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
