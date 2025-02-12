@@ -16,11 +16,28 @@ use num_cmp::NumCmp;
 use toml::Table;
 use toml::Value;
 
+use crate::spec::function::builtin::{count, length};
+use crate::spec::function::{Function, FunctionRegistry};
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;
 use crate::FromLiteral;
 use crate::Literal;
+
+#[derive(Debug, Clone, Copy)]
+pub struct BuiltinFunctionRegistry;
+
+impl FunctionRegistry for BuiltinFunctionRegistry {
+    type Value = Value;
+
+    fn get(&self, name: &str) -> Option<Function<Self::Value>> {
+        match name.to_lowercase().as_str() {
+            "length" => Some(length()),
+            "count" => Some(count()),
+            _ => None,
+        }
+    }
+}
 
 impl FromLiteral for Value {
     fn from_literal(literal: Literal) -> Option<Self> {

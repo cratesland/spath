@@ -30,11 +30,12 @@ pub mod spec;
 mod value;
 pub use value::*;
 
-#[cfg(feature = "json")]
-mod json;
 mod parser;
+
+#[cfg(feature = "json")]
+pub mod json;
 #[cfg(feature = "toml")]
-mod toml;
+pub mod toml;
 
 /// An error that can occur during parsing the SPath query.
 #[derive(Debug, thiserror::Error)]

@@ -12,32 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use spath::spec::function::Function;
-use spath::spec::function::FunctionRegistry;
-
 pub fn manifest_dir() -> std::path::PathBuf {
     let dir = env!("CARGO_MANIFEST_DIR");
     std::path::PathBuf::from(dir).canonicalize().unwrap()
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct EmptyJsonFunctionRegistry;
-
-impl FunctionRegistry for EmptyJsonFunctionRegistry {
-    type Value = serde_json::Value;
-
-    fn get(&self, _name: &str) -> Option<Function<Self::Value>> {
-        None
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct EmptyTomlFunctionRegistry;
-
-impl FunctionRegistry for EmptyTomlFunctionRegistry {
-    type Value = toml::Value;
-
-    fn get(&self, _name: &str) -> Option<Function<Self::Value>> {
-        None
-    }
 }

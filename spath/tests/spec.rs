@@ -26,8 +26,6 @@ use insta::assert_compact_json_snapshot;
 use spath::NodeList;
 use spath::SPath;
 
-use crate::common::EmptyJsonFunctionRegistry;
-
 fn json_testdata(filename: &str) -> serde_json::Value {
     let path = manifest_dir().join("testdata").join(filename);
     let content = std::fs::read_to_string(path).unwrap();
@@ -38,7 +36,7 @@ fn eval_spath<'a>(
     spath: &str,
     value: &'a serde_json::Value,
 ) -> Result<NodeList<'a, serde_json::Value>, spath::ParseError> {
-    let spath = SPath::parse_with_registry(spath, EmptyJsonFunctionRegistry)?;
+    let spath = SPath::parse_with_registry(spath, spath::json::BuiltinFunctionRegistry)?;
     Ok(spath.query(value))
 }
 
@@ -229,4 +227,9 @@ fn test_basic_null_semantic() {
         result.at_most_one().unwrap(),
         some(eq(&value_of_ident_null))
     );
+}
+
+#[test]
+fn test_filters() {
+
 }

@@ -23,8 +23,6 @@ use spath::ParseError;
 use spath::SPath;
 use toml::Value;
 
-use crate::common::EmptyTomlFunctionRegistry;
-
 fn toml_testdata(filename: &str) -> Value {
     let path = manifest_dir().join("testdata").join(filename);
     let content = std::fs::read_to_string(path).unwrap();
@@ -32,7 +30,7 @@ fn toml_testdata(filename: &str) -> Value {
 }
 
 fn eval_spath<'a>(spath: &str, value: &'a Value) -> Result<NodeList<'a, Value>, ParseError> {
-    let spath = SPath::parse_with_registry(spath, EmptyTomlFunctionRegistry)?;
+    let spath = SPath::parse_with_registry(spath, spath::toml::BuiltinFunctionRegistry)?;
     Ok(spath.query(value))
 }
 
