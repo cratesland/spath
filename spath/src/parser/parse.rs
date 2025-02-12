@@ -14,29 +14,6 @@
 
 use std::iter::Peekable;
 
-use crate::parser::error::Error;
-use crate::parser::error::RefineError;
-use crate::parser::input::text;
-use crate::parser::input::Input;
-use crate::parser::token::Token;
-use crate::parser::token::TokenKind::*;
-use crate::spec::function::{
-    FunctionExpr, FunctionExprArg, FunctionRegistry, FunctionValidationError, SPathType,
-};
-use crate::spec::query::Query;
-use crate::spec::query::QueryKind;
-use crate::spec::segment::QuerySegment;
-use crate::spec::segment::QuerySegmentKind;
-use crate::spec::segment::Segment;
-use crate::spec::selector::filter::{
-    BasicExpr, Comparable, ComparisonExpr, ComparisonOperator, ExistExpr, Filter, LogicalAndExpr,
-    LogicalOrExpr, SingularQuery,
-};
-use crate::spec::selector::index::Index;
-use crate::spec::selector::name::Name;
-use crate::spec::selector::slice::Slice;
-use crate::spec::selector::Selector;
-use crate::Literal;
 use winnow::combinator::alt;
 use winnow::combinator::delimited;
 use winnow::combinator::opt;
@@ -45,6 +22,37 @@ use winnow::combinator::repeat;
 use winnow::combinator::separated;
 use winnow::combinator::separated_pair;
 use winnow::Parser;
+
+use crate::parser::error::Error;
+use crate::parser::error::RefineError;
+use crate::parser::input::text;
+use crate::parser::input::Input;
+use crate::parser::token::Token;
+use crate::parser::token::TokenKind::*;
+use crate::spec::function::FunctionExpr;
+use crate::spec::function::FunctionExprArg;
+use crate::spec::function::FunctionRegistry;
+use crate::spec::function::FunctionValidationError;
+use crate::spec::function::SPathType;
+use crate::spec::query::Query;
+use crate::spec::query::QueryKind;
+use crate::spec::segment::QuerySegment;
+use crate::spec::segment::QuerySegmentKind;
+use crate::spec::segment::Segment;
+use crate::spec::selector::filter::BasicExpr;
+use crate::spec::selector::filter::Comparable;
+use crate::spec::selector::filter::ComparisonExpr;
+use crate::spec::selector::filter::ComparisonOperator;
+use crate::spec::selector::filter::ExistExpr;
+use crate::spec::selector::filter::Filter;
+use crate::spec::selector::filter::LogicalAndExpr;
+use crate::spec::selector::filter::LogicalOrExpr;
+use crate::spec::selector::filter::SingularQuery;
+use crate::spec::selector::index::Index;
+use crate::spec::selector::name::Name;
+use crate::spec::selector::slice::Slice;
+use crate::spec::selector::Selector;
+use crate::Literal;
 
 pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
 where
