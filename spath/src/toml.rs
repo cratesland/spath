@@ -16,8 +16,10 @@ use num_cmp::NumCmp;
 use toml::Table;
 use toml::Value;
 
-use crate::spec::function::builtin::{count, length};
-use crate::spec::function::{Function, FunctionRegistry};
+use crate::spec::function::builtin::count;
+use crate::spec::function::builtin::length;
+use crate::spec::function::Function;
+use crate::spec::function::FunctionRegistry;
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;

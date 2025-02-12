@@ -16,8 +16,10 @@ use serde_json::Map;
 use serde_json::Number;
 use serde_json::Value;
 
-use crate::spec::function::builtin::{count, length};
-use crate::spec::function::{Function, FunctionRegistry};
+use crate::spec::function::builtin::count;
+use crate::spec::function::builtin::length;
+use crate::spec::function::Function;
+use crate::spec::function::FunctionRegistry;
 use crate::value::ConcreteVariantArray;
 use crate::value::ConcreteVariantObject;
 use crate::value::VariantValue;

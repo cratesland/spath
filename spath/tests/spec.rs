@@ -23,6 +23,7 @@ use googletest::matchers::none;
 use googletest::prelude::eq;
 use googletest::prelude::some;
 use insta::assert_compact_json_snapshot;
+use serde_json::json;
 use spath::NodeList;
 use spath::SPath;
 
@@ -231,5 +232,25 @@ fn test_basic_null_semantic() {
 
 #[test]
 fn test_filters() {
+    // §2.3.5.3 Table 12: Filter Selector Examples
+    let value = json! {{
+      "a": [3, 5, 1, 2, 4, 6,
+            {"b": "j"},
+            {"b": "k"},
+            {"b": {}},
+            {"b": "kilo"}
+           ],
+      "o": {"p": 1, "q": 2, "r": 3, "s": 5, "t": {"u": 6}},
+      "e": "f"
+    }};
 
+    let result = eval_spath(r#"$.a[?@.b == 'kilo']"#, &value).unwrap();
+    let result = result.exactly_one().unwrap();
+    assert_compact_json_snapshot!(result, @r#"{"b": "kilo"}"#);
+    let result = eval_spath(r#"$.a[?(@.b == 'kilo')]"#, &value).unwrap();
+    let result = result.exactly_one().unwrap();
+    assert_compact_json_snapshot!(result, @r#"{"b": "kilo"}"#);
+    let result = eval_spath(r#"$.a[?@>3.5]"#, &value).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @r#"[5, 4, 6, {"b": "j"}, {"b": "k"}, {"b": {}}, {"b": "kilo"}]"#);
 }
