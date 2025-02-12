@@ -43,6 +43,6 @@ where
     let mut input = Input { input, state };
 
     let query = parse_query_main(&mut input).map_err(|err| ParseError(err.to_string()))?;
-    let registry = input.state.take_back_registry();
+    let registry = input.state.into_registry();
     Ok((query, registry))
 }

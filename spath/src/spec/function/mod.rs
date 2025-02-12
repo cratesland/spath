@@ -83,7 +83,7 @@ impl<T: VariantValue> Function<T> {
     }
 
     /// Validate the type of function arguments.
-    fn validate<Registry: FunctionRegistry<Value = T>>(
+    pub fn validate<Registry: FunctionRegistry<Value = T>>(
         &self,
         args: &[FunctionExprArg],
         registry: &Registry,

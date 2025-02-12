@@ -14,6 +14,29 @@
 
 use std::iter::Peekable;
 
+use crate::parser::error::Error;
+use crate::parser::error::RefineError;
+use crate::parser::input::text;
+use crate::parser::input::Input;
+use crate::parser::token::Token;
+use crate::parser::token::TokenKind::*;
+use crate::spec::function::{
+    FunctionExpr, FunctionExprArg, FunctionRegistry, FunctionValidationError, SPathType,
+};
+use crate::spec::query::Query;
+use crate::spec::query::QueryKind;
+use crate::spec::segment::QuerySegment;
+use crate::spec::segment::QuerySegmentKind;
+use crate::spec::segment::Segment;
+use crate::spec::selector::filter::{
+    BasicExpr, Comparable, ComparisonExpr, ComparisonOperator, ExistExpr, Filter, LogicalAndExpr,
+    LogicalOrExpr, SingularQuery,
+};
+use crate::spec::selector::index::Index;
+use crate::spec::selector::name::Name;
+use crate::spec::selector::slice::Slice;
+use crate::spec::selector::Selector;
+use crate::Literal;
 use winnow::combinator::alt;
 use winnow::combinator::delimited;
 use winnow::combinator::opt;
@@ -22,24 +45,6 @@ use winnow::combinator::repeat;
 use winnow::combinator::separated;
 use winnow::combinator::separated_pair;
 use winnow::Parser;
-
-use crate::parser::error::Error;
-use crate::parser::error::RefineError;
-use crate::parser::input::text;
-use crate::parser::input::Input;
-use crate::parser::token::Token;
-use crate::parser::token::TokenKind::*;
-use crate::spec::function::FunctionRegistry;
-use crate::spec::query::Query;
-use crate::spec::query::QueryKind;
-use crate::spec::segment::QuerySegment;
-use crate::spec::segment::QuerySegmentKind;
-use crate::spec::segment::Segment;
-use crate::spec::selector::filter::{BasicExpr, ExistExpr, Filter, LogicalAndExpr, LogicalOrExpr};
-use crate::spec::selector::index::Index;
-use crate::spec::selector::name::Name;
-use crate::spec::selector::slice::Slice;
-use crate::spec::selector::Selector;
 
 pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
 where
@@ -160,7 +165,7 @@ where
     Registry: FunctionRegistry,
 {
     LiteralInteger
-        .try_map(|i| parse_integer(i))
+        .try_map(parse_integer)
         .map(Index::new)
         .parse_next(input)
 }
@@ -202,7 +207,7 @@ where
     Registry: FunctionRegistry,
 {
     LiteralString
-        .try_map(|s| parse_string(s))
+        .try_map(parse_string)
         .map(|name| Selector::Name(Name::new(name)))
         .parse_next(input)
 }
@@ -288,8 +293,11 @@ where
     alt((
         parse_not_parent_expr,
         parse_paren_expr,
+        parse_comp_expr.map(BasicExpr::Relation),
         parse_not_exist_expr,
         parse_exist_expr,
+        parse_not_func_expr,
+        parse_func_expr,
     ))
     .parse_next(input)
 }
@@ -365,7 +373,202 @@ where
     alt((parse_root_query, parse_current_query)).parse_next(input)
 }
 
+fn parse_comp_expr<Registry>(input: &mut Input<Registry>) -> Result<ComparisonExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    (
+        parse_comparable,
+        parse_comparison_operator,
+        parse_comparable,
+    )
+        .map(|(left, op, right)| ComparisonExpr { left, op, right })
+        .parse_next(input)
+}
+
+fn parse_comparable<Registry>(input: &mut Input<Registry>) -> Result<Comparable, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    alt((
+        parse_literal_comparable,
+        parse_singular_path_comparable,
+        parse_function_expr_comparable,
+    ))
+    .parse_next(input)
+}
+
+fn parse_singular_path_comparable<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<Comparable, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_singular_path
+        .map(Comparable::SingularQuery)
+        .parse_next(input)
+}
+
+fn parse_singular_path<Registry>(input: &mut Input<Registry>) -> Result<SingularQuery, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_query
+        .try_map(|query| query.try_into())
+        .parse_next(input)
+}
+
+fn parse_func_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_func_expr_inner
+        .map(|expr| {
+            BasicExpr::Relation(ComparisonExpr {
+                left: expr,
+                op: ComparisonOperator::EqualTo,
+                right: Comparable::Literal(Literal::Bool(true)),
+            })
+        })
+        .parse_next(input)
+}
+
+fn parse_not_func_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    preceded(text("!"), parse_func_expr_inner)
+        .map(|expr| {
+            BasicExpr::Relation(ComparisonExpr {
+                left: expr,
+                op: ComparisonOperator::EqualTo,
+                right: Comparable::Literal(Literal::Bool(false)),
+            })
+        })
+        .parse_next(input)
+}
+
+fn parse_func_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<Comparable, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_function_expr
+        .try_map(|expr| match expr.return_type {
+            SPathType::Logical => Ok(Comparable::FunctionExpr(expr)),
+            _ => Err(FunctionValidationError::IncorrectFunctionReturnType),
+        })
+        .parse_next(input)
+}
+
+fn parse_function_expr_comparable<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<Comparable, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_function_expr
+        .try_map(|expr| match expr.return_type {
+            SPathType::Value => Ok(Comparable::FunctionExpr(expr)),
+            _ => Err(FunctionValidationError::IncorrectFunctionReturnType),
+        })
+        .parse_next(input)
+}
+
+fn parse_function_expr<Registry>(input: &mut Input<Registry>) -> Result<FunctionExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    let registry = input.state.registry();
+
+    (
+        Identifier,
+        delimited(
+            text("("),
+            separated(0.., parse_function_argument, text(",")),
+            text(")"),
+        ),
+    )
+        .try_map(|(name, args)| {
+            let name = name.text().to_string();
+            let args: Vec<FunctionExprArg> = args;
+            let function = match registry.get(name.as_str()) {
+                Some(function) => function,
+                None => return Err(FunctionValidationError::Undefined { name }),
+            };
+            function.validate(args.as_slice(), registry.as_ref())?;
+            Ok(FunctionExpr {
+                name,
+                args,
+                return_type: function.result_type(),
+            })
+        })
+        .parse_next(input)
+}
+
+fn parse_function_argument<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<FunctionExprArg, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    alt((
+        parse_literal.map(FunctionExprArg::Literal),
+        parse_singular_path.map(FunctionExprArg::SingularQuery),
+        parse_query.map(FunctionExprArg::FilterQuery),
+        parse_function_expr.map(FunctionExprArg::FunctionExpr),
+        parse_logical_or_expr.map(FunctionExprArg::LogicalExpr),
+    ))
+    .parse_next(input)
+}
+
+fn parse_literal_comparable<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<Comparable, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_literal.map(Comparable::Literal).parse_next(input)
+}
+
+fn parse_literal<Registry>(input: &mut Input<Registry>) -> Result<Literal, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    alt((
+        LiteralString.try_map(parse_string).map(Literal::String),
+        LiteralInteger.try_map(parse_integer).map(Literal::Int),
+        LiteralFloat.try_map(parse_float).map(Literal::Float),
+        TRUE.map(|_| Literal::Bool(true)),
+        FALSE.map(|_| Literal::Bool(false)),
+        NULL.map(|_| Literal::Null),
+    ))
+    .parse_next(input)
+}
+
+fn parse_comparison_operator<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<ComparisonOperator, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    alt((
+        text("==").map(|_| ComparisonOperator::EqualTo),
+        text("!=").map(|_| ComparisonOperator::NotEqualTo),
+        text("<=").map(|_| ComparisonOperator::LessThanEqualTo),
+        text("<").map(|_| ComparisonOperator::LessThan),
+        text(">=").map(|_| ComparisonOperator::GreaterThanEqualTo),
+        text(">").map(|_| ComparisonOperator::GreaterThan),
+    ))
+    .parse_next(input)
+}
+
 fn parse_integer(token: &Token) -> Result<i64, Error> {
+    let text = token.text();
+    text.parse()
+        .map_err(|err| Error::new(token.span, format!("{err}")))
+}
+
+fn parse_float(token: &Token) -> Result<f64, Error> {
     let text = token.text();
     text.parse()
         .map_err(|err| Error::new(token.span, format!("{err}")))

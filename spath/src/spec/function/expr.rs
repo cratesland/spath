@@ -33,7 +33,7 @@ use crate::VariantValue;
 pub struct FunctionExpr {
     pub name: String,
     pub args: Vec<FunctionExprArg>,
-    pub return_type: FunctionArgType,
+    pub return_type: SPathType,
 }
 
 impl FunctionExpr {
