@@ -13,16 +13,28 @@
 // limitations under the License.
 
 use std::iter::Peekable;
-use winnow::combinator::{alt, delimited, opt, preceded, repeat, separated, separated_pair};
+
+use winnow::combinator::alt;
+use winnow::combinator::delimited;
+use winnow::combinator::opt;
+use winnow::combinator::preceded;
+use winnow::combinator::repeat;
+use winnow::combinator::separated;
+use winnow::combinator::separated_pair;
 use winnow::Parser;
 
-use crate::parser::error::{Error, RefineError};
-use crate::parser::input::{text, Input};
+use crate::parser::error::Error;
+use crate::parser::error::RefineError;
+use crate::parser::input::text;
+use crate::parser::input::Input;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind::*;
 use crate::spec::function::FunctionRegistry;
-use crate::spec::query::{Query, QueryKind};
-use crate::spec::segment::{QuerySegment, QuerySegmentKind, Segment};
+use crate::spec::query::Query;
+use crate::spec::query::QueryKind;
+use crate::spec::segment::QuerySegment;
+use crate::spec::segment::QuerySegmentKind;
+use crate::spec::segment::Segment;
 use crate::spec::selector::index::Index;
 use crate::spec::selector::name::Name;
 use crate::spec::selector::slice::Slice;
@@ -227,7 +239,7 @@ fn parse_dot_member_name<Registry>(input: &mut Input<Registry>) -> Result<String
 where
     Registry: FunctionRegistry,
 {
-    Identifier
+    alt((Identifier, TRUE, FALSE, NULL))
         .map(|ident| ident.text().to_string())
         .parse_next(input)
 }

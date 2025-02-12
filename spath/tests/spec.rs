@@ -18,6 +18,7 @@ mod common;
 
 use common::manifest_dir;
 use googletest::assert_that;
+use googletest::matchers::container_eq;
 use googletest::matchers::none;
 use googletest::prelude::eq;
 use googletest::prelude::some;
@@ -119,7 +120,7 @@ fn test_basic_wildcard_selector() {
     assert_compact_json_snapshot!(result, @"[1, 2]");
     let result = eval_spath(r#"$.o[*, *]"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @"[[1, 2], [1, 2]]");
+    assert_compact_json_snapshot!(result, @"[1, 2, 1, 2]");
     let result = eval_spath(r#"$.a[*]"#, &value).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @"[5, 3]");
@@ -167,7 +168,7 @@ fn test_basic_child_and_descendant_segment() {
     assert_compact_json_snapshot!(result, @r#"["a", "d"]"#);
     let result = eval_spath(r#"$[0:2, 5]"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @r#"[["a", "b"], "f"]"#);
+    assert_compact_json_snapshot!(result, @r#"["a", "b", "f"]"#);
     let result = eval_spath(r#"$[0,0]"#, &value).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"["a", "a"]"#);
@@ -176,22 +177,22 @@ fn test_basic_child_and_descendant_segment() {
     let value = json_testdata("rfc-9535-example-9.json");
     let result = eval_spath(r#"$..j"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @"[1, 4]");
+    assert_compact_json_snapshot!(result, @"[4, 1]");
     let result = eval_spath(r#"$..[0]"#, &value).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[5, {"j": 4}]"#);
     let result = eval_spath(r#"$..*"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @r#"[[[5, 3, [{"j": 4}, {"k": 6}]], {"j": 1, "k": 2}], [1, 2], [5, 3, [{"j": 4}, {"k": 6}]], [{"j": 4}, {"k": 6}], [6], [4]]"#);
+    assert_compact_json_snapshot!(result, @r#"[[5, 3, [{"j": 4}, {"k": 6}]], {"j": 1, "k": 2}, 5, 3, [{"j": 4}, {"k": 6}], {"j": 4}, {"k": 6}, 4, 6, 1, 2]"#);
     let result = eval_spath(r#"$..[*]"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @r#"[[[5, 3, [{"j": 4}, {"k": 6}]], {"j": 1, "k": 2}], [1, 2], [5, 3, [{"j": 4}, {"k": 6}]], [{"j": 4}, {"k": 6}], [6], [4]]"#);
+    assert_compact_json_snapshot!(result, @r#"[[5, 3, [{"j": 4}, {"k": 6}]], {"j": 1, "k": 2}, 5, 3, [{"j": 4}, {"k": 6}], {"j": 4}, {"k": 6}, 4, 6, 1, 2]"#);
     let result = eval_spath(r#"$..o"#, &value).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[{"j": 1, "k": 2}]"#);
     let result = eval_spath(r#"$.o..[*, *]"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @"[[1, 2], [1, 2]]");
+    assert_compact_json_snapshot!(result, @"[1, 2, 1, 2]");
     let result = eval_spath(r#"$.a..[0, 1]"#, &value).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[5, 3, {"j": 4}, {"k": 6}]"#);
@@ -207,7 +208,7 @@ fn test_basic_null_semantic() {
     // §2.6.1 (Example) Table 17: Examples Involving (or Not Involving) null
     let value = json_testdata("rfc-9535-example-10.json");
     let null = serde_json::Value::Null;
-    let array_of_null = serde_json::Value::Array(vec![null.clone()]);
+    let array_of_null = [null.clone()];
     let value_of_ident_null = serde_json::Value::Number(1i64.into());
 
     let result = eval_spath(r#"$.a"#, &value).unwrap();
@@ -219,7 +220,10 @@ fn test_basic_null_semantic() {
     let result = eval_spath(r#"$.b[0]"#, &value).unwrap();
     assert_that!(result.at_most_one().unwrap(), some(eq(&null)));
     let result = eval_spath(r#"$.b[*]"#, &value).unwrap();
-    assert_that!(result.at_most_one().unwrap(), some(eq(&array_of_null)));
+    assert_that!(
+        result.all(),
+        container_eq(array_of_null.iter().collect::<Vec<_>>())
+    );
     let result = eval_spath(r#"$.null"#, &value).unwrap();
     assert_that!(
         result.at_most_one().unwrap(),

@@ -13,8 +13,10 @@
 // limitations under the License.
 
 use std::fmt;
+
 use winnow::token::literal;
-use winnow::{Parser, Stateful};
+use winnow::Parser;
+use winnow::Stateful;
 
 use crate::parser::error::RefineError;
 use crate::parser::token::Token;

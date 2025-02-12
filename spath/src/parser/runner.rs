@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use crate::parser::error::Error;
-use crate::parser::input::{Input, InputState, TokenSlice};
+use crate::parser::input::Input;
+use crate::parser::input::InputState;
+use crate::parser::input::TokenSlice;
 use crate::parser::parse::parse_query_main;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
