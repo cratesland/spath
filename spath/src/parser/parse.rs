@@ -35,6 +35,7 @@ use crate::spec::query::QueryKind;
 use crate::spec::segment::QuerySegment;
 use crate::spec::segment::QuerySegmentKind;
 use crate::spec::segment::Segment;
+use crate::spec::selector::filter::{BasicExpr, ExistExpr, Filter, LogicalAndExpr, LogicalOrExpr};
 use crate::spec::selector::index::Index;
 use crate::spec::selector::name::Name;
 use crate::spec::selector::slice::Slice;
@@ -142,7 +143,7 @@ where
         parse_name_selector,
         parse_array_slice_selector,
         parse_index_selector,
-        // parse_filter_selector,
+        parse_filter_selector,
     ))
     .parse_next(input)
 }
@@ -242,6 +243,126 @@ where
     alt((Identifier, TRUE, FALSE, NULL))
         .map(|ident| ident.text().to_string())
         .parse_next(input)
+}
+
+fn parse_filter_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_filter.map(Selector::Filter).parse_next(input)
+}
+
+fn parse_filter<Registry>(input: &mut Input<Registry>) -> Result<Filter, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    preceded(text("?"), parse_logical_or_expr)
+        .map(Filter)
+        .parse_next(input)
+}
+
+fn parse_logical_or_expr<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<LogicalOrExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    separated(1.., parse_logical_and, text("||"))
+        .map(LogicalOrExpr)
+        .parse_next(input)
+}
+
+fn parse_logical_and<Registry>(input: &mut Input<Registry>) -> Result<LogicalAndExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    separated(1.., parse_basic_expr, text("&&"))
+        .map(LogicalAndExpr)
+        .parse_next(input)
+}
+
+fn parse_basic_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    alt((
+        parse_not_parent_expr,
+        parse_paren_expr,
+        parse_not_exist_expr,
+        parse_exist_expr,
+    ))
+    .parse_next(input)
+}
+
+fn parse_paren_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_paren_expr_inner
+        .map(BasicExpr::Paren)
+        .parse_next(input)
+}
+
+fn parse_not_parent_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    preceded(text("!"), parse_paren_expr_inner)
+        .map(BasicExpr::ParenNot)
+        .parse_next(input)
+}
+
+fn parse_paren_expr_inner<Registry>(
+    input: &mut Input<Registry>,
+) -> Result<LogicalOrExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    delimited(text("("), parse_logical_or_expr, text(")")).parse_next(input)
+}
+
+fn parse_exist_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_exist_expr_inner
+        .map(BasicExpr::Exist)
+        .parse_next(input)
+}
+
+fn parse_not_exist_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    preceded(text("!"), parse_exist_expr_inner)
+        .map(BasicExpr::NotExist)
+        .parse_next(input)
+}
+
+fn parse_exist_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<ExistExpr, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    parse_query.map(ExistExpr).parse_next(input)
+}
+
+fn parse_current_query<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    preceded(text("@"), parse_path_segments)
+        .map(|segments| Query {
+            kind: QueryKind::Current,
+            segments,
+        })
+        .parse_next(input)
+}
+
+fn parse_query<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    alt((parse_root_query, parse_current_query)).parse_next(input)
 }
 
 fn parse_integer(token: &Token) -> Result<i64, Error> {
