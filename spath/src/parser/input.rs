@@ -12,14 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt;
 use winnow::token::literal;
-use winnow::Parser;
+use winnow::{Parser, Stateful};
 
 use crate::parser::error::RefineError;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
+use crate::spec::function::FunctionRegistry;
+
+pub struct InputState<Registry> {
+    registry: Registry,
+}
+
+impl<Registry> fmt::Debug for InputState<Registry> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InputState").finish_non_exhaustive()
+    }
+}
+
+impl<Registry> InputState<Registry> {
+    pub fn new(registry: Registry) -> Self {
+        Self { registry }
+    }
+
+    pub fn take_back_registry(self) -> Registry {
+        self.registry
+    }
+}
 
 pub type TokenSlice<'a> = winnow::stream::TokenSlice<'a, Token<'a>>;
+
+pub type Input<'a, Registry> = Stateful<TokenSlice<'a>, InputState<Registry>>;
 
 impl PartialEq<&str> for Token<'_> {
     fn eq(&self, other: &&str) -> bool {
@@ -33,12 +57,23 @@ impl PartialEq<TokenKind> for Token<'_> {
     }
 }
 
-impl<'a> Parser<TokenSlice<'a>, &'a Token<'a>, RefineError> for TokenKind {
-    fn parse_next(&mut self, input: &mut TokenSlice<'a>) -> Result<&'a Token<'a>, RefineError> {
+impl<'a, Registry> Parser<Input<'a, Registry>, &'a Token<'a>, RefineError> for TokenKind
+where
+    Registry: FunctionRegistry,
+{
+    fn parse_next(
+        &mut self,
+        input: &mut Input<'a, Registry>,
+    ) -> Result<&'a Token<'a>, RefineError> {
         literal(*self).parse_next(input).map(|t| &t[0])
     }
 }
 
-pub fn text<'a>(text: &'static str) -> impl Parser<TokenSlice<'a>, &'a Token<'a>, RefineError> {
-    move |input: &mut TokenSlice<'a>| literal(text).parse_next(input).map(|t| &t[0])
+pub fn text<'a, Registry>(
+    text: &'static str,
+) -> impl Parser<Input<'a, Registry>, &'a Token<'a>, RefineError>
+where
+    Registry: FunctionRegistry,
+{
+    move |input: &mut Input<'a, Registry>| literal(text).parse_next(input).map(|t| &t[0])
 }

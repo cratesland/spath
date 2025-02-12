@@ -12,38 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use winnow::{Parser, Stateful};
+use winnow::Parser;
 
 use crate::parser::error::RefineError;
-use crate::parser::input::text;
-use crate::parser::input::TokenSlice;
+use crate::parser::input::{text, Input};
 use crate::parser::token::TokenKind::*;
 use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 
-pub type Input<'a, R> = Stateful<TokenSlice<'a>, ParseContext<R>>;
-
-#[derive(Debug)]
-pub struct ParseContext<R> {
-    registry: R,
-}
-
-impl<R> ParseContext<R> {
-    pub fn new(registry: R) -> Self {
-        Self { registry }
-    }
-
-    pub fn take_back_registry(self) -> R {
-        self.registry
-    }
-}
-
-pub fn parse_query_main<R: FunctionRegistry>(input: &mut Input<R>) -> Result<Query, RefineError> {
+pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+where
+    Registry: FunctionRegistry,
+{
     (parse_root_query, EOI)
         .map(|(query, _)| query)
         .parse_next(input)
 }
 
-fn parse_root_query<R: FunctionRegistry>(input: &mut Input<R>) -> Result<Query, RefineError> {
+fn parse_root_query<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+where
+    Registry: FunctionRegistry,
+{
     text("$").map(|_| Query::default()).parse_next(input)
 }

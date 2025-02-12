@@ -13,8 +13,8 @@
 // limitations under the License.
 
 use crate::parser::error::Error;
-use crate::parser::input::TokenSlice;
-use crate::parser::parse::{parse_query_main, Input, ParseContext};
+use crate::parser::input::{Input, InputState, TokenSlice};
+use crate::parser::parse::parse_query_main;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
 use crate::spec::function::FunctionRegistry;
@@ -32,13 +32,10 @@ where
     R: FunctionRegistry<Value = T>,
 {
     let tokens = run_tokenizer(source).map_err(|err| ParseError(err.to_string()))?;
-    let slices = TokenSlice::new(&tokens);
-    let context = ParseContext::new(registry);
 
-    let mut input = Input {
-        input: slices,
-        state: context,
-    };
+    let input = TokenSlice::new(&tokens);
+    let state = InputState::new(registry);
+    let mut input = Input { input, state };
 
     let query = parse_query_main(&mut input).map_err(|err| ParseError(err.to_string()))?;
     let registry = input.state.take_back_registry();
