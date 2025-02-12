@@ -43,7 +43,7 @@ logos = { version = "0.15.0" }
 num-cmp = { version = "0.1.0" }
 num-traits = { version = "0.2.19" }
 thiserror = { version = "2.0.8" }
-winnow = { version = "0.7.1" }
+winnow = { version = "0.7.2" }
 
 # optional dependencies
 serde_json = { version = "1.0.133", optional = true }

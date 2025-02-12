@@ -99,7 +99,7 @@ pub enum TokenKind {
     Whitespace,
 
     #[regex(r#"[_a-zA-Z\u0080-\uFFFF][_a-zA-Z0-9\u0080-\uFFFF]*"#)]
-    Ident,
+    Identifier,
 
     #[regex(r#"'([^'\\]|\\.)*'"#)]
     #[regex(r#""([^"\\]|\\.)*""#)]
@@ -139,6 +139,8 @@ pub enum TokenKind {
     At,
     #[token(".")]
     Dot,
+    #[token("..")]
+    DoubleDot,
     #[token("*")]
     Asterisk,
     #[token(":")]

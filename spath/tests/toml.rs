@@ -49,8 +49,8 @@ fn test_casual() {
     let value = toml_testdata("learn-toml-in-y-minutes.toml");
     let result = eval_spath(r#"$..["name"]"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @r#"["Nail", "array of table"]"#);
+    assert_compact_json_snapshot!(result, @r#"["array of table", "Nail"]"#);
     let result = eval_spath(r#"$..[1]"#, &value).unwrap();
     let result = result.all();
-    assert_compact_json_snapshot!(result, @r#"[{}, "is", ["all", "strings", "are the same", "type"], "strings", 2.4, "different", "are", 2]"#);
+    assert_compact_json_snapshot!(result, @r#"[2, "are", "different", ["all", "strings", "are the same", "type"], 2.4, "strings", "is", {}]"#);
 }
