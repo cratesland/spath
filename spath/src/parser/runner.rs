@@ -26,10 +26,13 @@ pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser<T, R>(source: &str, registry: R) -> Result<(Query, R), ParseError>
+pub fn run_parser<T, Registry>(
+    source: &str,
+    registry: Registry,
+) -> Result<(Query, Registry), ParseError>
 where
     T: VariantValue,
-    R: FunctionRegistry<Value = T>,
+    Registry: FunctionRegistry<Value = T>,
 {
     let tokens = run_tokenizer(source).map_err(|err| ParseError(err.to_string()))?;
 

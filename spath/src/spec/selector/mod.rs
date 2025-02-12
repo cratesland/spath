@@ -72,11 +72,11 @@ impl fmt::Display for Selector {
 }
 
 impl Queryable for Selector {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> Vec<&'b T> {
         let mut result = Vec::new();
         match self {
@@ -89,11 +89,11 @@ impl Queryable for Selector {
         result
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         match self {

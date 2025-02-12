@@ -71,11 +71,11 @@ fn resolve_index(index: i64, len: usize) -> Option<usize> {
 }
 
 impl Queryable for Index {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
-        _registry: &R,
+        _registry: &Registry,
     ) -> Vec<&'b T> {
         current
             .as_array()
@@ -87,11 +87,11 @@ impl Queryable for Index {
             .unwrap_or_default()
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
-        _registry: &R,
+        _registry: &Registry,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         current

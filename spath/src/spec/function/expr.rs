@@ -37,11 +37,11 @@ pub struct FunctionExpr {
 }
 
 impl FunctionExpr {
-    pub fn evaluate<'a, 'b: 'a, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    pub fn evaluate<'a, 'b: 'a, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &'a self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> SPathValue<'a, T> {
         let args: Vec<SPathValue<T>> = self
             .args
@@ -53,10 +53,10 @@ impl FunctionExpr {
         f.evaluate(args)
     }
 
-    pub fn validate<R: FunctionRegistry>(
+    pub fn validate<Registry: FunctionRegistry>(
         name: String,
         args: Vec<FunctionExprArg>,
-        registry: &R,
+        registry: &Registry,
     ) -> Result<(), FunctionValidationError> {
         let f = registry
             .get(name.as_str())
@@ -102,11 +102,11 @@ impl fmt::Display for FunctionExprArg {
 }
 
 impl FunctionExprArg {
-    fn evaluate<'a, 'b: 'a, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn evaluate<'a, 'b: 'a, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &'a self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> SPathValue<'a, T> {
         match self {
             FunctionExprArg::Literal(lit) => match T::from_literal(lit.clone()) {
@@ -129,9 +129,9 @@ impl FunctionExprArg {
         }
     }
 
-    pub fn as_type_kind<R: FunctionRegistry>(
+    pub fn as_type_kind<Registry: FunctionRegistry>(
         &self,
-        registry: &R,
+        registry: &Registry,
     ) -> Result<FunctionArgType, FunctionValidationError> {
         match self {
             FunctionExprArg::Literal(_) => Ok(FunctionArgType::Literal),

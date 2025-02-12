@@ -46,19 +46,19 @@ mod sealed {
 /// A trait that can query a variant value.
 pub trait Queryable: sealed::Sealed {
     /// Run the query over a `current` node with a `root` node.
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> Vec<&'b T>;
 
     /// Run the query over a `current` node with a `root` node and a `parent` path.
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>>;
 }
@@ -110,11 +110,11 @@ pub enum QueryKind {
 }
 
 impl Queryable for Query {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> Vec<&'b T> {
         let mut result = match self.kind {
             QueryKind::Root => vec![root],
@@ -130,11 +130,11 @@ impl Queryable for Query {
         result
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         let mut result = match self.kind {

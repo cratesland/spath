@@ -50,11 +50,11 @@ impl fmt::Display for Name {
 }
 
 impl Queryable for Name {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
-        _registry: &R,
+        _registry: &Registry,
     ) -> Vec<&'b T> {
         let name = self.name.as_str();
         current
@@ -64,11 +64,11 @@ impl Queryable for Name {
             .unwrap_or_default()
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
-        _registry: &R,
+        _registry: &Registry,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         let name = self.name.as_str();

@@ -52,11 +52,11 @@ mod sealed {
 /// Trait for testing a filter type.
 pub trait TestFilter: sealed::Sealed {
     /// Test self using the current and root nodes.
-    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> bool;
 }
 
@@ -71,11 +71,11 @@ impl fmt::Display for Filter {
 }
 
 impl Queryable for Filter {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> Vec<&'b T> {
         if let Some(list) = current.as_array() {
             list.iter()
@@ -91,11 +91,11 @@ impl Queryable for Filter {
         }
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         if let Some(list) = current.as_array() {
@@ -136,11 +136,11 @@ impl fmt::Display for LogicalOrExpr {
 }
 
 impl TestFilter for LogicalOrExpr {
-    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> bool {
         self.0
             .iter()
@@ -166,11 +166,11 @@ impl fmt::Display for LogicalAndExpr {
 }
 
 impl TestFilter for LogicalAndExpr {
-    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> bool {
         self.0
             .iter()
@@ -216,11 +216,11 @@ impl BasicExpr {
 }
 
 impl TestFilter for BasicExpr {
-    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> bool {
         match self {
             BasicExpr::Paren(expr) => expr.test_filter(current, root, registry),
@@ -243,11 +243,11 @@ impl fmt::Display for ExistExpr {
 }
 
 impl TestFilter for ExistExpr {
-    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> bool {
         !self.0.query(current, root, registry).is_empty()
     }
@@ -277,11 +277,11 @@ impl fmt::Display for ComparisonExpr {
 }
 
 impl TestFilter for ComparisonExpr {
-    fn test_filter<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> bool {
         let left = self.left.as_value(current, root, registry);
         let right = self.right.as_value(current, root, registry);
@@ -380,11 +380,11 @@ impl fmt::Display for Comparable {
 
 impl Comparable {
     /// Convert the comparable variable to a variant value.
-    pub fn as_value<'a, 'b: 'a, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    pub fn as_value<'a, 'b: 'a, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &'a self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> SPathValue<'a, T> {
         match self {
             Comparable::Literal(lit) => match T::from_literal(lit.clone()) {

@@ -55,11 +55,11 @@ impl fmt::Display for QuerySegment {
 }
 
 impl Queryable for QuerySegment {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> Vec<&'b T> {
         let mut query = self.segment.query(current, root, registry);
         if matches!(self.kind, QuerySegmentKind::Descendant) {
@@ -68,11 +68,11 @@ impl Queryable for QuerySegment {
         query
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         if matches!(self.kind, QuerySegmentKind::Descendant) {
@@ -87,11 +87,11 @@ impl Queryable for QuerySegment {
     }
 }
 
-fn descend<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+fn descend<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
     segment: &QuerySegment,
     current: &'b T,
     root: &'b T,
-    registry: &R,
+    registry: &Registry,
 ) -> Vec<&'b T> {
     let mut query = Vec::new();
     if let Some(list) = current.as_array() {
@@ -106,11 +106,11 @@ fn descend<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
     query
 }
 
-fn descend_paths<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+fn descend_paths<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
     segment: &QuerySegment,
     current: &'b T,
     root: &'b T,
-    registry: &R,
+    registry: &Registry,
     parent: NormalizedPath<'b>,
 ) -> Vec<LocatedNode<'b, T>> {
     let mut result = Vec::new();
@@ -211,11 +211,11 @@ impl fmt::Display for Segment {
 }
 
 impl Queryable for Segment {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
     ) -> Vec<&'b T> {
         let mut result = Vec::new();
         match self {
@@ -236,11 +236,11 @@ impl Queryable for Segment {
         result
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         root: &'b T,
-        registry: &R,
+        registry: &Registry,
         mut parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         let mut result = vec![];

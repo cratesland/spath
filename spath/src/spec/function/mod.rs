@@ -83,10 +83,10 @@ impl<T: VariantValue> Function<T> {
     }
 
     /// Validate the type of function arguments.
-    fn validate<R: FunctionRegistry<Value = T>>(
+    fn validate<Registry: FunctionRegistry<Value = T>>(
         &self,
         args: &[FunctionExprArg],
-        registry: &R,
+        registry: &Registry,
     ) -> Result<(), FunctionValidationError> {
         let argument_types = self.argument_types();
 

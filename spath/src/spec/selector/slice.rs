@@ -163,20 +163,20 @@ impl Slice {
 }
 
 impl Queryable for Slice {
-    fn query<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
-        _registry: &R,
+        _registry: &Registry,
     ) -> Vec<&'b T> {
         self.select(current, |_, node| node)
     }
 
-    fn query_located<'b, T: VariantValue, R: FunctionRegistry<Value = T>>(
+    fn query_located<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
         &self,
         current: &'b T,
         _root: &'b T,
-        _registry: &R,
+        _registry: &Registry,
         parent: NormalizedPath<'b>,
     ) -> Vec<LocatedNode<'b, T>> {
         self.select(current, |i, node| {

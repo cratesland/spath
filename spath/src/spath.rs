@@ -24,13 +24,13 @@ use crate::ParseError;
 use crate::VariantValue;
 
 #[derive(Debug, Clone)]
-pub struct SPath<T: VariantValue, R: FunctionRegistry<Value = T>> {
+pub struct SPath<T: VariantValue, Registry: FunctionRegistry<Value = T>> {
     query: Query,
-    registry: R,
+    registry: Registry,
 }
 
-impl<T: VariantValue, R: FunctionRegistry<Value = T>> SPath<T, R> {
-    pub fn parse_with_registry(query: &str, registry: R) -> Result<Self, ParseError> {
+impl<T: VariantValue, Registry: FunctionRegistry<Value = T>> SPath<T, Registry> {
+    pub fn parse_with_registry(query: &str, registry: Registry) -> Result<Self, ParseError> {
         let (query, registry) = run_parser(query, registry)?;
         Ok(Self { query, registry })
     }
@@ -48,7 +48,7 @@ impl<T: VariantValue, R: FunctionRegistry<Value = T>> SPath<T, R> {
     }
 }
 
-impl<T: VariantValue, R: FunctionRegistry<Value = T>> fmt::Display for SPath<T, R> {
+impl<T: VariantValue, Registry: FunctionRegistry<Value = T>> fmt::Display for SPath<T, Registry> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.query)
     }
