@@ -289,13 +289,13 @@ impl TestFilter for ComparisonExpr {
             ComparisonOperator::EqualTo => check_equal_to(&left, &right),
             ComparisonOperator::NotEqualTo => !check_equal_to(&left, &right),
             ComparisonOperator::LessThan => check_less_than(&left, &right),
-            ComparisonOperator::GreaterThan => {
-                !check_less_than(&left, &right) && !check_equal_to(&left, &right)
-            }
+            ComparisonOperator::GreaterThan => check_less_than(&right, &left),
             ComparisonOperator::LessThanEqualTo => {
                 check_less_than(&left, &right) || check_equal_to(&left, &right)
             }
-            ComparisonOperator::GreaterThanEqualTo => !check_less_than(&left, &right),
+            ComparisonOperator::GreaterThanEqualTo => {
+                check_less_than(&right, &left) || check_equal_to(&left, &right)
+            }
         }
     }
 }
@@ -307,6 +307,8 @@ fn check_equal_to<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) 
         (SPathValue::Value(v1), SPathValue::Node(v2)) => (v1, *v2),
         (SPathValue::Value(v1), SPathValue::Value(v2)) => (v1, v2),
         (SPathValue::Nothing, SPathValue::Nothing) => return true,
+        (SPathValue::Nodes(l1), SPathValue::Nodes(l2)) => return l1.is_empty() && l2.is_empty(),
+        (SPathValue::Logical(l1), SPathValue::Logical(l2)) => return l1 == l2,
         _ => return false,
     };
 
