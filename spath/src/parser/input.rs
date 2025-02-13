@@ -18,7 +18,7 @@ use winnow::token::literal;
 use winnow::Parser;
 use winnow::Stateful;
 
-use crate::parser::error::RefineError;
+use crate::parser::error::Error;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
 use crate::spec::function::FunctionRegistry;
@@ -63,21 +63,18 @@ impl PartialEq<TokenKind> for Token<'_> {
     }
 }
 
-impl<'a, Registry> Parser<Input<'a, Registry>, &'a Token<'a>, RefineError> for TokenKind
+impl<'a, Registry> Parser<Input<'a, Registry>, &'a Token<'a>, Error> for TokenKind
 where
     Registry: FunctionRegistry,
 {
-    fn parse_next(
-        &mut self,
-        input: &mut Input<'a, Registry>,
-    ) -> Result<&'a Token<'a>, RefineError> {
+    fn parse_next(&mut self, input: &mut Input<'a, Registry>) -> Result<&'a Token<'a>, Error> {
         literal(*self).parse_next(input).map(|t| &t[0])
     }
 }
 
 pub fn text<'a, Registry>(
     text: &'static str,
-) -> impl Parser<Input<'a, Registry>, &'a Token<'a>, RefineError>
+) -> impl Parser<Input<'a, Registry>, &'a Token<'a>, Error>
 where
     Registry: FunctionRegistry,
 {

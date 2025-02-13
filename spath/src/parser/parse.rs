@@ -26,7 +26,6 @@ use winnow::stream::Stream;
 use winnow::Parser;
 
 use crate::parser::error::Error;
-use crate::parser::error::RefineError;
 use crate::parser::input::text;
 use crate::parser::input::Input;
 use crate::parser::token::Token;
@@ -56,7 +55,7 @@ use crate::spec::selector::slice::Slice;
 use crate::spec::selector::Selector;
 use crate::Literal;
 
-pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -65,7 +64,7 @@ where
         .parse_next(input)
 }
 
-fn parse_root_query<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+fn parse_root_query<Registry>(input: &mut Input<Registry>) -> Result<Query, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -77,16 +76,14 @@ where
         .parse_next(input)
 }
 
-fn parse_path_segments<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<Vec<QuerySegment>, RefineError>
+fn parse_path_segments<Registry>(input: &mut Input<Registry>) -> Result<Vec<QuerySegment>, Error>
 where
     Registry: FunctionRegistry,
 {
     repeat(0.., parse_segment).parse_next(input)
 }
 
-fn parse_segment<Registry>(input: &mut Input<Registry>) -> Result<QuerySegment, RefineError>
+fn parse_segment<Registry>(input: &mut Input<Registry>) -> Result<QuerySegment, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -103,7 +100,7 @@ where
     .parse_next(input)
 }
 
-fn parse_descendant_segment<Registry>(input: &mut Input<Registry>) -> Result<Segment, RefineError>
+fn parse_descendant_segment<Registry>(input: &mut Input<Registry>) -> Result<Segment, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -118,7 +115,7 @@ where
     .parse_next(input)
 }
 
-fn parse_child_segment<Registry>(input: &mut Input<Registry>) -> Result<Segment, RefineError>
+fn parse_child_segment<Registry>(input: &mut Input<Registry>) -> Result<Segment, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -130,7 +127,7 @@ where
     .parse_next(input)
 }
 
-fn parse_child_long_hand<Registry>(input: &mut Input<Registry>) -> Result<Segment, RefineError>
+fn parse_child_long_hand<Registry>(input: &mut Input<Registry>) -> Result<Segment, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -142,14 +139,14 @@ where
     .parse_next(input)
 }
 
-fn parse_multi_selector<Registry>(input: &mut Input<Registry>) -> Result<Vec<Selector>, RefineError>
+fn parse_multi_selector<Registry>(input: &mut Input<Registry>) -> Result<Vec<Selector>, Error>
 where
     Registry: FunctionRegistry,
 {
     separated(1.., parse_selector, text(",")).parse_next(input)
 }
 
-fn parse_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, RefineError>
+fn parse_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -163,14 +160,14 @@ where
     .parse_next(input)
 }
 
-fn parse_index_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, RefineError>
+fn parse_index_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, Error>
 where
     Registry: FunctionRegistry,
 {
     parse_index.map(Selector::Index).parse_next(input)
 }
 
-fn parse_index<Registry>(input: &mut Input<Registry>) -> Result<Index, RefineError>
+fn parse_index<Registry>(input: &mut Input<Registry>) -> Result<Index, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -180,9 +177,7 @@ where
         .parse_next(input)
 }
 
-fn parse_array_slice_selector<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<Selector, RefineError>
+fn parse_array_slice_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -191,7 +186,7 @@ where
         .parse_next(input)
 }
 
-fn parse_array_slice<Registry>(input: &mut Input<Registry>) -> Result<Slice, RefineError>
+fn parse_array_slice<Registry>(input: &mut Input<Registry>) -> Result<Slice, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -212,7 +207,7 @@ where
     .parse_next(input)
 }
 
-fn parse_name_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, RefineError>
+fn parse_name_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -222,16 +217,14 @@ where
         .parse_next(input)
 }
 
-fn parse_wildcard_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, RefineError>
+fn parse_wildcard_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, Error>
 where
     Registry: FunctionRegistry,
 {
     text("*").map(|_| Selector::Wildcard).parse_next(input)
 }
 
-fn parse_dot_wildcard_shorthand<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<Segment, RefineError>
+fn parse_dot_wildcard_shorthand<Registry>(input: &mut Input<Registry>) -> Result<Segment, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -240,9 +233,7 @@ where
         .parse_next(input)
 }
 
-fn parse_dot_member_name_shorthand<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<Segment, RefineError>
+fn parse_dot_member_name_shorthand<Registry>(input: &mut Input<Registry>) -> Result<Segment, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -251,7 +242,7 @@ where
         .parse_next(input)
 }
 
-fn parse_dot_member_name<Registry>(input: &mut Input<Registry>) -> Result<String, RefineError>
+fn parse_dot_member_name<Registry>(input: &mut Input<Registry>) -> Result<String, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -260,14 +251,14 @@ where
         .parse_next(input)
 }
 
-fn parse_filter_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, RefineError>
+fn parse_filter_selector<Registry>(input: &mut Input<Registry>) -> Result<Selector, Error>
 where
     Registry: FunctionRegistry,
 {
     parse_filter.map(Selector::Filter).parse_next(input)
 }
 
-fn parse_filter<Registry>(input: &mut Input<Registry>) -> Result<Filter, RefineError>
+fn parse_filter<Registry>(input: &mut Input<Registry>) -> Result<Filter, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -276,9 +267,7 @@ where
         .parse_next(input)
 }
 
-fn parse_logical_or_expr<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<LogicalOrExpr, RefineError>
+fn parse_logical_or_expr<Registry>(input: &mut Input<Registry>) -> Result<LogicalOrExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -287,7 +276,7 @@ where
         .parse_next(input)
 }
 
-fn parse_logical_and<Registry>(input: &mut Input<Registry>) -> Result<LogicalAndExpr, RefineError>
+fn parse_logical_and<Registry>(input: &mut Input<Registry>) -> Result<LogicalAndExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -296,7 +285,7 @@ where
         .parse_next(input)
 }
 
-fn parse_basic_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_basic_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -312,7 +301,7 @@ where
     .parse_next(input)
 }
 
-fn parse_paren_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_paren_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -321,7 +310,7 @@ where
         .parse_next(input)
 }
 
-fn parse_not_parent_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_not_parent_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -330,16 +319,14 @@ where
         .parse_next(input)
 }
 
-fn parse_paren_expr_inner<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<LogicalOrExpr, RefineError>
+fn parse_paren_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<LogicalOrExpr, Error>
 where
     Registry: FunctionRegistry,
 {
     delimited(text("("), parse_logical_or_expr, text(")")).parse_next(input)
 }
 
-fn parse_exist_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_exist_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -348,7 +335,7 @@ where
         .parse_next(input)
 }
 
-fn parse_not_exist_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_not_exist_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -357,14 +344,14 @@ where
         .parse_next(input)
 }
 
-fn parse_exist_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<ExistExpr, RefineError>
+fn parse_exist_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<ExistExpr, Error>
 where
     Registry: FunctionRegistry,
 {
     parse_query.map(ExistExpr).parse_next(input)
 }
 
-fn parse_current_query<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+fn parse_current_query<Registry>(input: &mut Input<Registry>) -> Result<Query, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -376,14 +363,14 @@ where
         .parse_next(input)
 }
 
-fn parse_query<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
+fn parse_query<Registry>(input: &mut Input<Registry>) -> Result<Query, Error>
 where
     Registry: FunctionRegistry,
 {
     alt((parse_root_query, parse_current_query)).parse_next(input)
 }
 
-fn parse_comp_expr<Registry>(input: &mut Input<Registry>) -> Result<ComparisonExpr, RefineError>
+fn parse_comp_expr<Registry>(input: &mut Input<Registry>) -> Result<ComparisonExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -396,7 +383,7 @@ where
         .parse_next(input)
 }
 
-fn parse_comparable<Registry>(input: &mut Input<Registry>) -> Result<Comparable, RefineError>
+fn parse_comparable<Registry>(input: &mut Input<Registry>) -> Result<Comparable, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -410,7 +397,7 @@ where
 
 fn parse_singular_path_comparable<Registry>(
     input: &mut Input<Registry>,
-) -> Result<Comparable, RefineError>
+) -> Result<Comparable, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -419,7 +406,7 @@ where
         .parse_next(input)
 }
 
-fn parse_singular_path<Registry>(input: &mut Input<Registry>) -> Result<SingularQuery, RefineError>
+fn parse_singular_path<Registry>(input: &mut Input<Registry>) -> Result<SingularQuery, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -428,7 +415,7 @@ where
         .parse_next(input)
 }
 
-fn parse_func_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_func_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -437,7 +424,7 @@ where
         .parse_next(input)
 }
 
-fn parse_not_func_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, RefineError>
+fn parse_not_func_expr<Registry>(input: &mut Input<Registry>) -> Result<BasicExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -446,7 +433,7 @@ where
         .parse_next(input)
 }
 
-fn parse_func_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<FunctionExpr, RefineError>
+fn parse_func_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<FunctionExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -460,7 +447,7 @@ where
 
 fn parse_function_expr_comparable<Registry>(
     input: &mut Input<Registry>,
-) -> Result<Comparable, RefineError>
+) -> Result<Comparable, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -472,7 +459,7 @@ where
         .parse_next(input)
 }
 
-fn parse_function_expr<Registry>(input: &mut Input<Registry>) -> Result<FunctionExpr, RefineError>
+fn parse_function_expr<Registry>(input: &mut Input<Registry>) -> Result<FunctionExpr, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -497,7 +484,7 @@ where
         None => {
             return Err(FunctionValidationError::Undefined { name }).map_err(|err| {
                 input.reset(&start);
-                RefineError::from_external_error(input, err)
+                Error::from_external_error(input, err)
             })
         }
     };
@@ -506,7 +493,7 @@ where
         .validate(args.as_slice(), registry)
         .map_err(|err| {
             input.reset(&start);
-            RefineError::from_external_error(input, err)
+            Error::from_external_error(input, err)
         })?;
 
     Ok(FunctionExpr {
@@ -516,9 +503,7 @@ where
     })
 }
 
-fn parse_function_argument<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<FunctionExprArg, RefineError>
+fn parse_function_argument<Registry>(input: &mut Input<Registry>) -> Result<FunctionExprArg, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -532,16 +517,14 @@ where
     .parse_next(input)
 }
 
-fn parse_literal_comparable<Registry>(
-    input: &mut Input<Registry>,
-) -> Result<Comparable, RefineError>
+fn parse_literal_comparable<Registry>(input: &mut Input<Registry>) -> Result<Comparable, Error>
 where
     Registry: FunctionRegistry,
 {
     parse_literal.map(Comparable::Literal).parse_next(input)
 }
 
-fn parse_literal<Registry>(input: &mut Input<Registry>) -> Result<Literal, RefineError>
+fn parse_literal<Registry>(input: &mut Input<Registry>) -> Result<Literal, Error>
 where
     Registry: FunctionRegistry,
 {
@@ -558,7 +541,7 @@ where
 
 fn parse_comparison_operator<Registry>(
     input: &mut Input<Registry>,
-) -> Result<ComparisonOperator, RefineError>
+) -> Result<ComparisonOperator, Error>
 where
     Registry: FunctionRegistry,
 {
