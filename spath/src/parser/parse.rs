@@ -14,15 +14,6 @@
 
 use std::iter::Peekable;
 
-use winnow::combinator::alt;
-use winnow::combinator::delimited;
-use winnow::combinator::opt;
-use winnow::combinator::preceded;
-use winnow::combinator::repeat;
-use winnow::combinator::separated;
-use winnow::combinator::separated_pair;
-use winnow::Parser;
-
 use crate::parser::error::Error;
 use crate::parser::error::RefineError;
 use crate::parser::input::text;
@@ -53,6 +44,16 @@ use crate::spec::selector::name::Name;
 use crate::spec::selector::slice::Slice;
 use crate::spec::selector::Selector;
 use crate::Literal;
+use winnow::combinator::alt;
+use winnow::combinator::delimited;
+use winnow::combinator::opt;
+use winnow::combinator::preceded;
+use winnow::combinator::repeat;
+use winnow::combinator::separated;
+use winnow::combinator::separated_pair;
+use winnow::error::FromExternalError;
+use winnow::stream::Stream;
+use winnow::Parser;
 
 pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
 where
@@ -486,9 +487,9 @@ fn parse_function_expr<Registry>(input: &mut Input<Registry>) -> Result<Function
 where
     Registry: FunctionRegistry,
 {
-    let registry = input.state.registry();
+    let start = input.checkpoint();
 
-    (
+    let (name, args) = (
         Identifier,
         delimited(
             text("("),
@@ -496,21 +497,34 @@ where
             text(")"),
         ),
     )
-        .try_map(|(name, args)| {
-            let name = name.text().to_string();
-            let args: Vec<FunctionExprArg> = args;
-            let function = match registry.get(name.as_str()) {
-                Some(function) => function,
-                None => return Err(FunctionValidationError::Undefined { name }),
-            };
-            function.validate(args.as_slice(), registry.as_ref())?;
-            Ok(FunctionExpr {
-                name,
-                args,
-                return_type: function.result_type(),
+        .parse_next(input)?;
+
+    let registry = input.state.registry();
+    let name = name.text().to_string();
+    let args: Vec<FunctionExprArg> = args;
+
+    let function = match registry.get(name.as_str()) {
+        Some(function) => function,
+        None => {
+            return Err(FunctionValidationError::Undefined { name }).map_err(|err| {
+                input.reset(&start);
+                RefineError::from_external_error(input, err)
             })
-        })
-        .parse_next(input)
+        }
+    };
+
+    function
+        .validate(args.as_slice(), registry)
+        .map_err(|err| {
+            input.reset(&start);
+            RefineError::from_external_error(input, err)
+        })?;
+
+    Ok(FunctionExpr {
+        name,
+        args,
+        return_type: function.result_type(),
+    })
 }
 
 fn parse_function_argument<Registry>(
