@@ -79,6 +79,23 @@ impl fmt::Display for FunctionExpr {
     }
 }
 
+impl TestFilter for FunctionExpr {
+    fn test_filter<'b, T: VariantValue, Registry: FunctionRegistry<Value = T>>(
+        &self,
+        current: &'b T,
+        root: &'b T,
+        registry: &Registry,
+    ) -> bool {
+        match self.evaluate(current, root, registry) {
+            SPathValue::Logical(l) => l.into(),
+            SPathValue::Nodes(nodes) => !nodes.is_empty(),
+            SPathValue::Value(_) => unreachable!("testable function never returns a value"),
+            SPathValue::Node(_) => unreachable!("testable function never returns a node"),
+            SPathValue::Nothing => unreachable!("testable function never returns nothing"),
+        }
+    }
+}
+
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub enum FunctionExprArg {

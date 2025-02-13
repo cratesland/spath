@@ -40,6 +40,7 @@ mod sealed {
     use super::ExistExpr;
     use super::LogicalAndExpr;
     use super::LogicalOrExpr;
+    use crate::spec::function::FunctionExpr;
 
     pub trait Sealed {}
     impl Sealed for LogicalOrExpr {}
@@ -47,6 +48,7 @@ mod sealed {
     impl Sealed for BasicExpr {}
     impl Sealed for ExistExpr {}
     impl Sealed for ComparisonExpr {}
+    impl Sealed for FunctionExpr {}
 }
 
 /// Trait for testing a filter type.
@@ -181,16 +183,20 @@ impl TestFilter for LogicalAndExpr {
 /// The basic for m of expression in a filter.
 #[derive(Debug, Clone)]
 pub enum BasicExpr {
-    /// An expression wrapped in parentheses
+    /// An expression wrapped in parentheses.
     Paren(LogicalOrExpr),
-    /// A parenthesized expression preceded with a `!`
+    /// A parenthesized expression preceded with a `!`.
     ParenNot(LogicalOrExpr),
-    /// A relationship expression which compares two JSON values
+    /// A relationship expression which compares two variant values.
     Relation(ComparisonExpr),
-    /// An existence expression
+    /// An existence expression.
     Exist(ExistExpr),
-    /// The inverse of an existence expression, i.e., preceded by `!`
+    /// The inverse of an existence expression, i.e., preceded by `!`.
     NotExist(ExistExpr),
+    /// A function expression.
+    FuncExpr(FunctionExpr),
+    /// The inverse of a function expression, i.e., preceded by `!`.
+    FuncNotExpr(FunctionExpr),
 }
 
 impl fmt::Display for BasicExpr {
@@ -201,6 +207,8 @@ impl fmt::Display for BasicExpr {
             BasicExpr::Relation(rel) => write!(f, "{rel}"),
             BasicExpr::Exist(exist) => write!(f, "{exist}"),
             BasicExpr::NotExist(exist) => write!(f, "!{exist}"),
+            BasicExpr::FuncExpr(expr) => write!(f, "{expr}"),
+            BasicExpr::FuncNotExpr(expr) => write!(f, "!{expr}"),
         }
     }
 }
@@ -228,6 +236,8 @@ impl TestFilter for BasicExpr {
             BasicExpr::Relation(expr) => expr.test_filter(current, root, registry),
             BasicExpr::Exist(expr) => expr.test_filter(current, root, registry),
             BasicExpr::NotExist(expr) => !expr.test_filter(current, root, registry),
+            BasicExpr::FuncExpr(expr) => expr.test_filter(current, root, registry),
+            BasicExpr::FuncNotExpr(expr) => !expr.test_filter(current, root, registry),
         }
     }
 }
@@ -253,14 +263,14 @@ impl TestFilter for ExistExpr {
     }
 }
 
-/// A comparison expression comparing two JSON values
+/// A comparison expression comparing two variant values
 #[derive(Debug, Clone)]
 pub struct ComparisonExpr {
-    /// The JSON value on the left of the comparison
+    /// The variant value on the left of the comparison
     pub left: Comparable,
     /// The operator of comparison
     pub op: ComparisonOperator,
-    /// The JSON value on the right of the comparison
+    /// The variant value on the right of the comparison
     pub right: Comparable,
 }
 
@@ -308,7 +318,6 @@ fn check_equal_to<T: VariantValue>(left: &SPathValue<T>, right: &SPathValue<T>) 
         (SPathValue::Value(v1), SPathValue::Value(v2)) => (v1, v2),
         (SPathValue::Nothing, SPathValue::Nothing) => return true,
         (SPathValue::Nodes(l1), SPathValue::Nodes(l2)) => return l1.is_empty() && l2.is_empty(),
-        (SPathValue::Logical(l1), SPathValue::Logical(l2)) => return l1 == l2,
         _ => return false,
     };
 
@@ -457,7 +466,7 @@ impl TryFrom<Selector> for SingularQuerySegment {
     }
 }
 
-/// Represents a singular query in JSONPath
+/// Represents a singular query in SPath
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SingularQuery {
     /// The kind of singular query, relative or absolute

@@ -433,13 +433,7 @@ where
     Registry: FunctionRegistry,
 {
     parse_func_expr_inner
-        .map(|expr| {
-            BasicExpr::Relation(ComparisonExpr {
-                left: expr,
-                op: ComparisonOperator::EqualTo,
-                right: Comparable::Literal(Literal::Bool(true)),
-            })
-        })
+        .map(|expr| BasicExpr::FuncExpr(expr))
         .parse_next(input)
 }
 
@@ -448,23 +442,17 @@ where
     Registry: FunctionRegistry,
 {
     preceded(text("!"), parse_func_expr_inner)
-        .map(|expr| {
-            BasicExpr::Relation(ComparisonExpr {
-                left: expr,
-                op: ComparisonOperator::EqualTo,
-                right: Comparable::Literal(Literal::Bool(false)),
-            })
-        })
+        .map(|expr| BasicExpr::FuncNotExpr(expr))
         .parse_next(input)
 }
 
-fn parse_func_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<Comparable, RefineError>
+fn parse_func_expr_inner<Registry>(input: &mut Input<Registry>) -> Result<FunctionExpr, RefineError>
 where
     Registry: FunctionRegistry,
 {
     parse_function_expr
         .try_map(|expr| match expr.return_type {
-            SPathType::Logical => Ok(Comparable::FunctionExpr(expr)),
+            SPathType::Logical | SPathType::Nodes => Ok(expr),
             _ => Err(FunctionValidationError::IncorrectFunctionReturnType),
         })
         .parse_next(input)

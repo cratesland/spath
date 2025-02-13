@@ -24,7 +24,7 @@ use crate::LocatedNode;
 use crate::NormalizedPath;
 use crate::VariantValue;
 
-/// A segment of a JSONPath query
+/// A segment of a SPath query
 #[derive(Debug, Clone)]
 pub struct QuerySegment {
     /// The kind of segment
@@ -162,7 +162,7 @@ impl Segment {
                     s.is_singular()
                 } else {
                     // if the selector list is empty, this shouldn't be a valid
-                    // JSONPath, but at least, it would be selecting nothing, and
+                    // SPath, but at least, it would be selecting nothing, and
                     // that could be considered singular, i.e., None.
                     true
                 }

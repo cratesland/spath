@@ -254,4 +254,14 @@ fn test_filters() {
     let result = eval_spath(r#"$.a[?@>3.5]"#, &value).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[5, 4, 6]"#);
+    let result = eval_spath(r#"$.a[?@.b]"#, &value).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @r#"[{"b": "j"}, {"b": "k"}, {"b": {}}, {"b": "kilo"}]"#);
+}
+
+#[test]
+fn test_filter_functions() {
+    let values = json! {{
+
+    }};
 }
