@@ -14,7 +14,6 @@
 
 [package]
 name = "spath"
-version = "0.2.0"
 
 description = """
 SPath is query expressions for semi-structured data. You can use it
@@ -28,6 +27,7 @@ license.workspace = true
 readme.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+version.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
@@ -36,21 +36,27 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = []
 json = ["dep:serde_json"]
+regex = ["dep:regex"]
 toml = ["dep:toml"]
 
 [dependencies]
 logos = { version = "0.15.0" }
+num-cmp = { version = "0.1.0" }
 num-traits = { version = "0.2.19" }
 thiserror = { version = "2.0.8" }
+winnow = { version = "0.7.2" }
 
 # optional dependencies
+regex = { version = "1.11.1", optional = true }
 serde_json = { version = "1.0.133", optional = true }
-toml = { version = "0.8.19", optional = true }
+toml = { version = "0.8.20", optional = true }
 
 [dev-dependencies]
 googletest = { version = "0.13.0" }
 insta = { version = "1.41.1", features = ["json"] }
 serde_json = { version = "1.0.133" }
+spath = { workspace = true, features = ["json", "toml", "regex"] }
+toml = { version = "0.8.19" }
 
 [lints]
 workspace = true

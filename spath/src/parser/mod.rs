@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub(crate) mod ast;
-pub(crate) mod error;
-pub(crate) mod parse;
-pub(crate) mod range;
-pub(crate) mod runner;
-pub(crate) mod token;
+mod error;
+mod input;
+mod parse;
+mod range;
+mod runner;
+mod token;
+
+pub use runner::run_parser;

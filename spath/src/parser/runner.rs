@@ -12,17 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::parser::ast::RootPathQuery;
-use crate::parser::error::ParseError;
-use crate::parser::parse::Parser;
+use crate::parser::error::Error;
+use crate::parser::input::Input;
+use crate::parser::input::InputState;
+use crate::parser::input::TokenSlice;
+use crate::parser::parse::parse_query_main;
 use crate::parser::token::Token;
 use crate::parser::token::Tokenizer;
+use crate::spec::function::FunctionRegistry;
+use crate::spec::query::Query;
+use crate::ParseError;
+use crate::VariantValue;
 
-pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, ParseError> {
+pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser(source: &str) -> Result<RootPathQuery, ParseError> {
-    let tokens = run_tokenizer(source)?;
-    Parser::new(source, tokens).parse()
+pub fn run_parser<T, Registry>(
+    source: &str,
+    registry: Registry,
+) -> Result<(Query, Registry), ParseError>
+where
+    T: VariantValue,
+    Registry: FunctionRegistry<Value = T>,
+{
+    let tokens = run_tokenizer(source).map_err(|err| ParseError(err.to_string()))?;
+
+    let input = TokenSlice::new(&tokens);
+    let state = InputState::new(registry);
+    let mut input = Input { input, state };
+
+    let query = parse_query_main(&mut input).map_err(|err| ParseError(err.to_string()))?;
+    let registry = input.state.into_registry();
+    Ok((query, registry))
 }

@@ -17,7 +17,7 @@ use std::fmt;
 use logos::Lexer;
 use logos::Logos;
 
-use crate::parser::error::ParseError;
+use crate::parser::error::Error;
 use crate::parser::range::Range;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -64,14 +64,14 @@ impl<'a> Tokenizer<'a> {
 }
 
 impl<'a> Iterator for Tokenizer<'a> {
-    type Item = Result<Token<'a>, ParseError>;
+    type Item = Result<Token<'a>, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.lexer.next() {
             Some(Err(_)) => {
                 let span = Range::from(self.lexer.span().start..self.source.len());
                 let message = "failed to recognize the rest tokens";
-                Some(Err(ParseError::new(span, message)))
+                Some(Err(Error::new(span, message)))
             }
             Some(Ok(kind)) => Some(Ok(Token {
                 source: self.source,
@@ -99,7 +99,7 @@ pub enum TokenKind {
     Whitespace,
 
     #[regex(r#"[_a-zA-Z\u0080-\uFFFF][_a-zA-Z0-9\u0080-\uFFFF]*"#)]
-    Ident,
+    Identifier,
 
     #[regex(r#"'([^'\\]|\\.)*'"#)]
     #[regex(r#""([^"\\]|\\.)*""#)]
@@ -139,6 +139,8 @@ pub enum TokenKind {
     At,
     #[token(".")]
     Dot,
+    #[token("..")]
+    DoubleDot,
     #[token("*")]
     Asterisk,
     #[token(":")]

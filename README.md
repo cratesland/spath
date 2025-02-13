@@ -57,3 +57,14 @@ fn main() {
 ## License
 
 This project is licensed under [Apache License, Version 2.0](LICENSE).
+
+## History
+
+From 0.3.0, this crate is reimplemented as a fork of [serde_json_path](https://crates.io/crates/serde_json_path), with modifications:
+
+* Support other semi-structured data values
+* Rewrite the parser with winnow + logos
+* Redesign the function registry
+* `impl Ord for PathElement`
+* Drop Integer wrapper (although it's a MUST in RFC 9535, I don't find the reason and highly suspect it's because JSON has only numbers (IEEE 754 float))
+* Drop serde related impls.

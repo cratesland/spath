@@ -12,16 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use num_cmp::NumCmp;
 use toml::Table;
 use toml::Value;
 
-use crate::ConcreteVariantArray;
-use crate::ConcreteVariantObject;
-use crate::VariantValue;
+use crate::spec::function;
+use crate::value::ConcreteVariantArray;
+use crate::value::ConcreteVariantObject;
+use crate::value::VariantValue;
+use crate::FromLiteral;
+use crate::Literal;
+
+pub type BuiltinFunctionRegistry = function::BuiltinFunctionRegistry<Value>;
+
+impl FromLiteral for Value {
+    fn from_literal(literal: Literal) -> Option<Self> {
+        match literal {
+            Literal::Int(v) => Some(Value::Integer(v)),
+            Literal::Float(v) => Some(Value::Float(v)),
+            Literal::String(v) => Some(Value::String(v)),
+            Literal::Bool(v) => Some(Value::Boolean(v)),
+            Literal::Null => None,
+        }
+    }
+}
 
 impl VariantValue for Value {
     type VariantArray = Vec<Value>;
     type VariantObject = Table;
+
+    fn is_null(&self) -> bool {
+        // toml 1.0 does not have null
+        //
+        // @see https://github.com/toml-lang/toml/issues/975
+        // @see https://github.com/toml-lang/toml.io/issues/70
+        // @see https://github.com/toml-lang/toml/issues/30
+        false
+    }
+
+    fn is_boolean(&self) -> bool {
+        self.is_bool()
+    }
+
+    fn is_string(&self) -> bool {
+        self.is_str()
+    }
 
     fn is_array(&self) -> bool {
         self.is_array()
@@ -29,6 +64,14 @@ impl VariantValue for Value {
 
     fn is_object(&self) -> bool {
         self.is_table()
+    }
+
+    fn as_bool(&self) -> Option<bool> {
+        self.as_bool()
+    }
+
+    fn as_str(&self) -> Option<&str> {
+        self.as_str()
     }
 
     fn as_array(&self) -> Option<&Self::VariantArray> {
@@ -39,8 +82,21 @@ impl VariantValue for Value {
         self.as_table()
     }
 
-    fn make_array(iter: impl IntoIterator<Item = Self>) -> Self {
-        Value::Array(iter.into_iter().collect())
+    fn is_less_than(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Integer(l), Value::Float(r)) => NumCmp::num_lt(*l, *r),
+            (Value::Float(l), Value::Integer(r)) => NumCmp::num_lt(*l, *r),
+            (Value::String(l), Value::String(r)) => l < r,
+            _ => false,
+        }
+    }
+
+    fn is_equal_to(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Integer(l), Value::Float(r)) => NumCmp::num_eq(*l, *r),
+            (Value::Float(l), Value::Integer(r)) => NumCmp::num_eq(*l, *r),
+            _ => self == other,
+        }
     }
 }
 
@@ -79,43 +135,15 @@ impl ConcreteVariantObject for Table {
         self.get(key)
     }
 
+    fn get_key_value(&self, key: &str) -> Option<(&String, &Self::Value)> {
+        self.get_key_value(key)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&String, &Self::Value)> {
+        self.iter()
+    }
+
     fn values(&self) -> impl Iterator<Item = &Self::Value> {
         self.values()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use insta::assert_compact_json_snapshot;
-
-    use super::*;
-    use crate::manifest_dir;
-    use crate::SPath;
-
-    fn toml_testdata(filename: &str) -> Value {
-        let path = manifest_dir().join("testdata").join(filename);
-        let content = std::fs::read_to_string(path).unwrap();
-        toml::from_str(&content).unwrap()
-    }
-
-    fn eval_spath(spath: &str, value: &Value) -> Option<Value> {
-        let spath = SPath::new(spath).unwrap();
-        spath.eval(value)
-    }
-
-    #[test]
-    fn test_root_identical() {
-        let value = toml_testdata("learn-toml-in-y-minutes.toml");
-        let result = eval_spath("$", &value).unwrap();
-        assert_eq!(result, value);
-    }
-
-    #[test]
-    fn test_casual() {
-        let value = toml_testdata("learn-toml-in-y-minutes.toml");
-        let result = eval_spath(r#"$..["name"]"#, &value).unwrap();
-        assert_compact_json_snapshot!(result, @r#"["Nail", "array of table"]"#);
-        let result = eval_spath(r#"$..[1]"#, &value).unwrap();
-        assert_compact_json_snapshot!(result, @r#"[{}, "is", ["all", "strings", "are the same", "type"], "strings", 2.4, "different", "are", 2]"#);
     }
 }

@@ -12,12 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// An error that can occur during parsing and binding the SPath.
-#[derive(Debug, thiserror::Error)]
-#[error("{0}")]
-pub struct BindError(pub String);
-
-/// An error that can occur during evaluating the SPath against a variant value.
-#[derive(Debug, thiserror::Error)]
-#[error("{0}")]
-pub struct EvalError(pub String);
+pub fn manifest_dir() -> std::path::PathBuf {
+    let dir = env!("CARGO_MANIFEST_DIR");
+    std::path::PathBuf::from(dir).canonicalize().unwrap()
+}

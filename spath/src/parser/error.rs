@@ -12,26 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use winnow::error::ContextError;
+
 use crate::parser::range::Range;
 
+// TODO(tisonkun): Use `Error` directly later for better error reporting.
+pub type RefineError = ContextError;
+
+/// A parsing error with source span and message.
 #[derive(Debug, thiserror::Error)]
 #[error("{message}")]
-pub struct ParseError {
+pub struct Error {
     range: Range,
     message: String,
 }
 
-impl ParseError {
+impl Error {
     pub fn new(range: Range, message: impl Into<String>) -> Self {
         let message = message.into();
         Self { range, message }
-    }
-
-    pub fn empty() -> Self {
-        Self::new(Range { start: 0, end: 0 }, "empty input")
-    }
-
-    pub fn unexpected_token(range: Range) -> Self {
-        Self::new(range, "unexpected token")
     }
 }
