@@ -21,7 +21,7 @@ use winnow::combinator::preceded;
 use winnow::combinator::repeat;
 use winnow::combinator::separated;
 use winnow::combinator::separated_pair;
-use winnow::error::FromExternalError;
+use winnow::error::{FromExternalError, ModalError};
 use winnow::stream::Stream;
 use winnow::Parser;
 
@@ -484,7 +484,7 @@ where
         None => {
             return Err(FunctionValidationError::Undefined { name }).map_err(|err| {
                 input.reset(&start);
-                Error::from_external_error(input, err)
+                Error::from_external_error(input, err).cut()
             })
         }
     };
@@ -493,7 +493,7 @@ where
         .validate(args.as_slice(), registry)
         .map_err(|err| {
             input.reset(&start);
-            Error::from_external_error(input, err)
+            Error::from_external_error(input, err).cut()
         })?;
 
     Ok(FunctionExpr {
@@ -559,13 +559,13 @@ where
 fn parse_integer(token: &Token) -> Result<i64, Error> {
     let text = token.text();
     text.parse()
-        .map_err(|err| Error::new(token.span, format!("{err}")))
+        .map_err(|err| Error::new_cut(token.span, format!("{err}")))
 }
 
 fn parse_float(token: &Token) -> Result<f64, Error> {
     let text = token.text();
     text.parse()
-        .map_err(|err| Error::new(token.span, format!("{err}")))
+        .map_err(|err| Error::new_cut(token.span, format!("{err}")))
 }
 
 fn parse_string(token: &Token) -> Result<String, Error> {
@@ -574,7 +574,7 @@ fn parse_string(token: &Token) -> Result<String, Error> {
 
     let quote = chars.next().expect("quote char always exist");
     if chars.next_back() != Some(quote) {
-        return Err(Error::new(token.span, "mismatched quote"));
+        return Err(Error::new_cut(token.span, "mismatched quote"));
     }
 
     let mut chars = chars.peekable();
@@ -591,18 +591,18 @@ fn parse_string(token: &Token) -> Result<String, Error> {
                 Some('\\') => output.push('\\'),
                 Some('u') => output.push(
                     unescape_unicode(&mut chars)
-                        .ok_or_else(|| Error::new(token.span, "invalid escape sequence"))?,
+                        .ok_or_else(|| Error::new_cut(token.span, "invalid escape sequence"))?,
                 ),
                 Some('x') => output.push(
                     unescape_byte(&mut chars)
-                        .ok_or_else(|| Error::new(token.span, "invalid escape sequence"))?,
+                        .ok_or_else(|| Error::new_cut(token.span, "invalid escape sequence"))?,
                 ),
                 Some(c) if c.is_digit(8) => output.push(unescape_octal(c, &mut chars)),
                 Some(c) if c == quote => output.push(quote),
-                _ => return Err(Error::new(token.span, "invalid escape sequence")),
+                _ => return Err(Error::new_cut(token.span, "invalid escape sequence")),
             };
         } else if c == quote {
-            return Err(Error::new(token.span, "intermediately close quote"));
+            return Err(Error::new_cut(token.span, "intermediately close quote"));
         } else {
             output.push(c);
         }

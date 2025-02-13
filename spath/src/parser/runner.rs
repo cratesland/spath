@@ -36,19 +36,13 @@ where
     T: VariantValue,
     Registry: FunctionRegistry<Value = T>,
 {
-    let tokens = run_tokenizer(source).map_err(|err| {
-        let message = err.to_pretty_string(source);
-        ParseError(message)
-    })?;
+    let tokens = run_tokenizer(source).map_err(|err| err.into_parse_error(source))?;
 
     let input = TokenSlice::new(&tokens);
     let state = InputState::new(registry);
     let mut input = Input { input, state };
 
-    let query = parse_query_main(&mut input).map_err(|err| {
-        let message = err.to_pretty_string(source);
-        ParseError(message)
-    })?;
+    let query = parse_query_main(&mut input).map_err(|err| err.into_parse_error(source))?;
     let registry = input.state.into_registry();
     Ok((query, registry))
 }

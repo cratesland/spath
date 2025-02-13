@@ -71,7 +71,7 @@ impl<'a> Iterator for Tokenizer<'a> {
             Some(Err(_)) => {
                 let span = Range::from(self.lexer.span().start..self.source.len());
                 let message = "failed to recognize the rest tokens";
-                Some(Err(Error::new(span, message)))
+                Some(Err(Error::new_cut(span, message)))
             }
             Some(Ok(kind)) => Some(Ok(Token {
                 source: self.source,

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt;
-
-use winnow::token::literal;
-use winnow::Parser;
-use winnow::Stateful;
-
 use crate::parser::error::Error;
+use crate::parser::range::Range;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
 use crate::spec::function::FunctionRegistry;
+use std::fmt;
+use winnow::error::ParserError;
+use winnow::stream::Stream;
+use winnow::Parser;
+use winnow::Stateful;
 
 pub struct InputState<Registry> {
     registry: Registry,
@@ -51,32 +51,29 @@ pub type TokenSlice<'a> = winnow::stream::TokenSlice<'a, Token<'a>>;
 
 pub type Input<'a, Registry> = Stateful<TokenSlice<'a>, InputState<Registry>>;
 
-impl PartialEq<&str> for Token<'_> {
-    fn eq(&self, other: &&str) -> bool {
-        self.text() == *other
-    }
-}
-
-impl PartialEq<TokenKind> for Token<'_> {
-    fn eq(&self, other: &TokenKind) -> bool {
-        self.kind == *other
-    }
-}
-
 impl<'a, Registry> Parser<Input<'a, Registry>, &'a Token<'a>, Error> for TokenKind
 where
     Registry: FunctionRegistry,
 {
     fn parse_next(&mut self, input: &mut Input<'a, Registry>) -> Result<&'a Token<'a>, Error> {
-        match literal::<_, _, Error>(*self).parse_next(input) {
-            Ok(tokens) => Ok(&tokens[0]),
-            Err(mut err) => {
+        match input.first().filter(|token| token.kind == *self) {
+            Some(_) => {
+                // SAFETY: `first` returns `Some` if the input is not empty.
+                let token = input.next_token().unwrap();
+                Ok(token)
+            }
+            None => {
                 if self.is_eoi() {
-                    err.set_message("cannot recognize token");
+                    let start = input.first().unwrap().span.start;
+                    let end = input.last().unwrap().span.end;
+                    Err(Error::new_cut(
+                        Range::from(start..end),
+                        "failed to parse the rest of input",
+                    ))
                 } else {
-                    err.set_message(format!("expected token {self:?}"));
+                    let err = Error::from_input(input);
+                    Err(err.with_message(format!("expected token {self:?}")))
                 }
-                Err(err)
             }
         }
     }
@@ -88,11 +85,16 @@ pub fn text<'a, Registry>(
 where
     Registry: FunctionRegistry,
 {
-    move |input: &mut Input<'a, Registry>| match literal::<_, _, Error>(text).parse_next(input) {
-        Ok(tokens) => Ok(&tokens[0]),
-        Err(mut err) => {
-            err.set_message(format!("expected text {text}"));
-            Err(err)
+    move |input: &mut Input<'a, Registry>| match input.first().filter(|token| token.text() == text)
+    {
+        Some(_) => {
+            // SAFETY: `first` returns `Some` if the input is not empty.
+            let token = input.next_token().unwrap();
+            Ok(token)
+        }
+        None => {
+            let err = Error::from_input(input);
+            Err(err.with_message(format!("expected text {text}")))
         }
     }
 }

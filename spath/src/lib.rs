@@ -38,6 +38,18 @@ pub mod json;
 pub mod toml;
 
 /// An error that can occur during parsing the SPath query.
-#[derive(Debug, thiserror::Error)]
-#[error("{0}")]
-pub struct ParseError(pub String);
+#[derive(Debug)]
+pub struct ParseError {
+    source: String,
+    range: std::ops::Range<usize>,
+    message: String,
+    context: Vec<(std::ops::Range<usize>, &'static str)>,
+}
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.source, self.message)
+    }
+}
+
+impl std::error::Error for ParseError {}
