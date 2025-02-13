@@ -433,7 +433,7 @@ where
     Registry: FunctionRegistry,
 {
     parse_func_expr_inner
-        .map(|expr| BasicExpr::FuncExpr(expr))
+        .map(BasicExpr::FuncExpr)
         .parse_next(input)
 }
 
@@ -442,7 +442,7 @@ where
     Registry: FunctionRegistry,
 {
     preceded(text("!"), parse_func_expr_inner)
-        .map(|expr| BasicExpr::FuncNotExpr(expr))
+        .map(BasicExpr::FuncNotExpr)
         .parse_next(input)
 }
 

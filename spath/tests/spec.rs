@@ -262,6 +262,32 @@ fn test_filters() {
 #[test]
 fn test_filter_functions() {
     let values = json! {{
-
+        "a": [1, 2, 3, 4, 5],
+        "b": 42,
+        "c": [],
+        "d": {"e": 1, "f": 2},
     }};
+
+    let result = eval_spath(r#"$[?length(@) < 3]"#, &values).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @r#"[[], {"e": 1, "f": 2}]"#);
+    let result = eval_spath(r#"$[?count(@.*) > 1]"#, &values).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @r#"[[1, 2, 3, 4, 5], {"e": 1, "f": 2}]"#);
+
+    let values = json! {[
+        {"timezone": "UTC", "offset": 0},
+        {"timezone": "CET", "offset": 1},
+        {"timezone": "PST", "offset": -8},
+        {"timezone": "JST", "offset": 9},
+    ]};
+    let result = eval_spath(r#"$[?match(@.timezone, "...")].offset"#, &values).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @"[0, 1, -8, 9]");
+    let result = eval_spath(r#"$[?match(@.timezone, "..")].offset"#, &values).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @"[]");
+    let result = eval_spath(r#"$[?search(@.timezone, "ST")].offset"#, &values).unwrap();
+    let result = result.all();
+    assert_compact_json_snapshot!(result, @"[-8, 9]");
 }
