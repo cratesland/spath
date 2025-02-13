@@ -14,6 +14,17 @@
 
 use std::iter::Peekable;
 
+use winnow::combinator::alt;
+use winnow::combinator::delimited;
+use winnow::combinator::opt;
+use winnow::combinator::preceded;
+use winnow::combinator::repeat;
+use winnow::combinator::separated;
+use winnow::combinator::separated_pair;
+use winnow::error::FromExternalError;
+use winnow::stream::Stream;
+use winnow::Parser;
+
 use crate::parser::error::Error;
 use crate::parser::error::RefineError;
 use crate::parser::input::text;
@@ -44,16 +55,6 @@ use crate::spec::selector::name::Name;
 use crate::spec::selector::slice::Slice;
 use crate::spec::selector::Selector;
 use crate::Literal;
-use winnow::combinator::alt;
-use winnow::combinator::delimited;
-use winnow::combinator::opt;
-use winnow::combinator::preceded;
-use winnow::combinator::repeat;
-use winnow::combinator::separated;
-use winnow::combinator::separated_pair;
-use winnow::error::FromExternalError;
-use winnow::stream::Stream;
-use winnow::Parser;
 
 pub fn parse_query_main<Registry>(input: &mut Input<Registry>) -> Result<Query, RefineError>
 where

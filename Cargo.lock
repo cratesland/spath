@@ -474,6 +474,7 @@ dependencies = [
  "logos",
  "num-cmp",
  "num-traits",
+ "regex",
  "serde_json",
  "spath",
  "thiserror",

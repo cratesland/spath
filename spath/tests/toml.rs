@@ -30,7 +30,8 @@ fn toml_testdata(filename: &str) -> Value {
 }
 
 fn eval_spath<'a>(spath: &str, value: &'a Value) -> Result<NodeList<'a, Value>, ParseError> {
-    let spath = SPath::parse_with_registry(spath, spath::toml::BuiltinFunctionRegistry)?;
+    let registry = spath::toml::BuiltinFunctionRegistry::default();
+    let spath = SPath::parse_with_registry(spath, registry)?;
     Ok(spath.query(value))
 }
 

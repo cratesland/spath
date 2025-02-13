@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use std::fmt;
+use std::marker::PhantomData;
 
+use crate::spec::function::builtin::*;
 use crate::VariantValue;
 
 pub mod builtin;
@@ -119,4 +121,34 @@ impl<T: VariantValue> Function<T> {
 pub trait FunctionRegistry {
     type Value: VariantValue;
     fn get(&self, name: &str) -> Option<Function<Self::Value>>;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct BuiltinFunctionRegistry<T: VariantValue> {
+    phantom: PhantomData<T>,
+}
+
+impl<T: VariantValue> Default for BuiltinFunctionRegistry<T> {
+    fn default() -> Self {
+        Self {
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<T: VariantValue> FunctionRegistry for BuiltinFunctionRegistry<T> {
+    type Value = T;
+
+    fn get(&self, name: &str) -> Option<Function<Self::Value>> {
+        match name.to_lowercase().as_str() {
+            "count" => Some(count()),
+            "length" => Some(length()),
+            "value" => Some(value()),
+            #[cfg(feature = "regex")]
+            "match" => Some(matches()),
+            #[cfg(feature = "regex")]
+            "search" => Some(search()),
+            _ => None,
+        }
+    }
 }

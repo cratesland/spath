@@ -36,6 +36,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = []
 json = ["dep:serde_json"]
+regex = ["dep:regex"]
 toml = ["dep:toml"]
 
 [dependencies]
@@ -46,6 +47,7 @@ thiserror = { version = "2.0.8" }
 winnow = { version = "0.7.2" }
 
 # optional dependencies
+regex = { version = "1.11.1", optional = true }
 serde_json = { version = "1.0.133", optional = true }
 toml = { version = "0.8.20", optional = true }
 
@@ -53,7 +55,7 @@ toml = { version = "0.8.20", optional = true }
 googletest = { version = "0.13.0" }
 insta = { version = "1.41.1", features = ["json"] }
 serde_json = { version = "1.0.133" }
-spath = { workspace = true, features = ["json", "toml"] }
+spath = { workspace = true, features = ["json", "toml", "regex"] }
 toml = { version = "0.8.19" }
 
 [lints]

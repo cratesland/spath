@@ -37,7 +37,8 @@ fn eval_spath<'a>(
     spath: &str,
     value: &'a serde_json::Value,
 ) -> Result<NodeList<'a, serde_json::Value>, spath::ParseError> {
-    let spath = SPath::parse_with_registry(spath, spath::json::BuiltinFunctionRegistry)?;
+    let registry = spath::json::BuiltinFunctionRegistry::default();
+    let spath = SPath::parse_with_registry(spath, registry)?;
     Ok(spath.query(value))
 }
 

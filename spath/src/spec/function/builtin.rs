@@ -81,3 +81,79 @@ pub fn count<T: VariantValue>() -> Function<T> {
         }),
     )
 }
+
+pub fn value<T: VariantValue>() -> Function<T> {
+    Function::new(
+        "value",
+        vec![SPathType::Nodes],
+        SPathType::Value,
+        Box::new(move |mut args| {
+            assert_eq!(args.len(), 1);
+
+            let value = args.pop().unwrap().into_nodes().unwrap();
+            if value.len() > 1 {
+                SPathValue::Nothing
+            } else {
+                match value.first() {
+                    Some(v) => SPathValue::Node(v),
+                    None => SPathValue::Nothing,
+                }
+            }
+        }),
+    )
+}
+
+// 'match' is a keyword in Rust, so we use 'matches' instead.
+#[cfg(feature = "regex")]
+pub fn matches<T: VariantValue>() -> Function<T> {
+    Function::new(
+        "match",
+        vec![SPathType::Value, SPathType::Value],
+        SPathType::Logical,
+        Box::new(move |mut args| {
+            assert_eq!(args.len(), 2);
+
+            let matcher = args.pop().unwrap().into_value().unwrap();
+            let expr = args.pop().unwrap().into_value().unwrap();
+
+            let matches = match (
+                matcher.as_value().and_then(|v| v.as_str()),
+                expr.as_value().and_then(|v| v.as_str()),
+            ) {
+                (Some(r), Some(s)) => regex::Regex::new(format!("(?R)^({r})$").as_str())
+                    .map(|r| r.is_match(s))
+                    .unwrap_or_default(),
+                _ => false,
+            };
+
+            SPathValue::Logical(matches.into())
+        }),
+    )
+}
+
+#[cfg(feature = "regex")]
+pub fn search<T: VariantValue>() -> Function<T> {
+    Function::new(
+        "search",
+        vec![SPathType::Value, SPathType::Value],
+        SPathType::Logical,
+        Box::new(move |mut args| {
+            assert_eq!(args.len(), 2);
+
+            let matcher = args.pop().unwrap().into_value().unwrap();
+            let expr = args.pop().unwrap().into_value().unwrap();
+
+            let matches = match (
+                matcher.as_value().and_then(|v| v.as_str()),
+                expr.as_value().and_then(|v| v.as_str()),
+            ) {
+                (Some(r), Some(s)) => regex::Regex::new(format!("(?R)({r})").as_str())
+                    .map(|r| r.is_match(s))
+                    .unwrap_or_default(),
+                _ => false,
+            };
+
+            SPathValue::Logical(matches.into())
+        }),
+    )
+}
