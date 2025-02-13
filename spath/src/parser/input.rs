@@ -68,7 +68,17 @@ where
     Registry: FunctionRegistry,
 {
     fn parse_next(&mut self, input: &mut Input<'a, Registry>) -> Result<&'a Token<'a>, Error> {
-        literal(*self).parse_next(input).map(|t| &t[0])
+        match literal::<_, _, Error>(*self).parse_next(input) {
+            Ok(tokens) => Ok(&tokens[0]),
+            Err(mut err) => {
+                if self.is_eoi() {
+                    err.set_message("cannot recognize token");
+                } else {
+                    err.set_message(format!("expected token {self:?}"));
+                }
+                Err(err)
+            }
+        }
     }
 }
 
@@ -78,5 +88,11 @@ pub fn text<'a, Registry>(
 where
     Registry: FunctionRegistry,
 {
-    move |input: &mut Input<'a, Registry>| literal(text).parse_next(input).map(|t| &t[0])
+    move |input: &mut Input<'a, Registry>| match literal::<_, _, Error>(text).parse_next(input) {
+        Ok(tokens) => Ok(&tokens[0]),
+        Err(mut err) => {
+            err.set_message(format!("expected text {text}"));
+            Err(err)
+        }
+    }
 }

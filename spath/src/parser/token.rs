@@ -167,3 +167,9 @@ pub enum TokenKind {
     #[token("true")]
     TRUE,
 }
+
+impl TokenKind {
+    pub fn is_eoi(&self) -> bool {
+        matches!(self, TokenKind::EOI)
+    }
+}

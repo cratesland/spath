@@ -81,6 +81,10 @@ impl Error {
         }
     }
 
+    pub fn set_message(&mut self, message: impl Into<String>) {
+        self.message = message.into();
+    }
+
     pub fn to_pretty_string(&self, source: &str) -> String {
         use std::fmt::Write;
 
