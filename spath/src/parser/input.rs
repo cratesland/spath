@@ -18,13 +18,15 @@ use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
 use crate::spec::function::FunctionRegistry;
 use std::fmt;
+use std::sync::Arc;
 use winnow::error::ParserError;
 use winnow::stream::Stream;
 use winnow::Parser;
 use winnow::Stateful;
 
+#[derive(Clone)]
 pub struct InputState<Registry> {
-    registry: Registry,
+    registry: Arc<Registry>,
 }
 
 impl<Registry> fmt::Debug for InputState<Registry> {
@@ -38,12 +40,8 @@ impl<Registry> InputState<Registry> {
         Self { registry }
     }
 
-    pub fn registry(&self) -> &Registry {
-        &self.registry
-    }
-
-    pub fn into_registry(self) -> Registry {
-        self.registry
+    pub fn registry(&self) -> Arc<Registry> {
+        self.registry.clone()
     }
 }
 

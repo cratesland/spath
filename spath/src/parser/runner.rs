@@ -23,26 +23,20 @@ use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 use crate::ParseError;
 use crate::VariantValue;
+use std::sync::Arc;
 
 pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser<T, Registry>(
-    source: &str,
-    registry: Registry,
-) -> Result<(Query, Registry), ParseError>
+pub fn run_parser<T, Registry>(source: &str, registry: Arc<Registry>) -> Result<Query, ParseError>
 where
     T: VariantValue,
     Registry: FunctionRegistry<Value = T>,
 {
     let tokens = run_tokenizer(source).map_err(|err| err.into_parse_error(source))?;
-
     let input = TokenSlice::new(&tokens);
     let state = InputState::new(registry);
     let mut input = Input { input, state };
-
-    let query = parse_query_main(&mut input).map_err(|err| err.into_parse_error(source))?;
-    let registry = input.state.into_registry();
-    Ok((query, registry))
+    parse_query_main(&mut input).map_err(|err| err.into_parse_error(source))
 }
