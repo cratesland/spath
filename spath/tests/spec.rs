@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg(feature = "json")]
+
 //! Spec tests based on RFC 9535.
 
 mod common;
@@ -258,7 +260,6 @@ fn test_filters() {
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[{"b": "j"}, {"b": "k"}, {"b": {}}, {"b": "kilo"}]"#);
 }
-
 #[test]
 fn test_filter_functions() {
     let values = json! {{
@@ -274,7 +275,11 @@ fn test_filter_functions() {
     let result = eval_spath(r#"$[?count(@.*) > 1]"#, &values).unwrap();
     let result = result.all();
     assert_compact_json_snapshot!(result, @r#"[[1, 2, 3, 4, 5], {"e": 1, "f": 2}]"#);
+}
 
+#[test]
+#[cfg(feature = "regex")]
+fn test_regex_functions() {
     let values = json! {[
         {"timezone": "UTC", "offset": 0},
         {"timezone": "CET", "offset": 1},
