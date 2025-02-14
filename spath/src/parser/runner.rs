@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use crate::parser::error::Error;
 use crate::parser::input::Input;
 use crate::parser::input::InputState;
@@ -23,7 +25,6 @@ use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
 use crate::ParseError;
 use crate::VariantValue;
-use std::sync::Arc;
 
 pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()

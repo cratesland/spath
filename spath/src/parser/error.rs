@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt::Debug;
+
+use winnow::error::FromExternalError;
+use winnow::error::ModalError;
+use winnow::error::Needed;
+use winnow::error::ParserError;
+
 use crate::parser::input::Input;
 use crate::parser::range::Range;
 use crate::spec::function::FunctionValidationError;
 use crate::spec::selector::filter::NonSingularQueryError;
 use crate::ParseError;
-use std::fmt::Debug;
-use winnow::error::{FromExternalError, ModalError, Needed, ParserError};
 
 /// An in-flight parsing error.
 #[derive(Debug)]

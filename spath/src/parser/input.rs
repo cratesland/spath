@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt;
+use std::sync::Arc;
+
+use winnow::error::ParserError;
+use winnow::stream::Stream;
+use winnow::Parser;
+use winnow::Stateful;
+
 use crate::parser::error::Error;
 use crate::parser::range::Range;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
 use crate::spec::function::FunctionRegistry;
-use std::fmt;
-use std::sync::Arc;
-use winnow::error::ParserError;
-use winnow::stream::Stream;
-use winnow::Parser;
-use winnow::Stateful;
 
 #[derive(Clone)]
 pub struct InputState<Registry> {

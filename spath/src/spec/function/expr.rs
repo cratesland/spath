@@ -175,13 +175,13 @@ impl FunctionExprArg {
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum FunctionValidationError {
     /// Function not defined in inventory
-    #[error("function name '{name}' is not defined")]
+    #[error("function '{name}' is not defined")]
     Undefined {
         /// The name of the function
         name: String,
     },
     /// Mismatch in number of function arguments
-    #[error("function {name} expects {expected} args, but received {received}")]
+    #[error("function '{name}' expects {expected} args, but received {received}")]
     NumberOfArgsMismatch {
         /// Function name.
         name: String,
@@ -191,8 +191,7 @@ pub enum FunctionValidationError {
         received: usize,
     },
     /// The type of received argument does not match the function definition
-    #[error("in function {name}, in argument position {position}, expected a type that converts to {expected}, received {received}"
-    )]
+    #[error("function '{name}' argument [{position}] expects a type that converts to <{expected}>, but received <{received}>")]
     MismatchTypeKind {
         /// Function name.
         name: String,
@@ -203,6 +202,13 @@ pub enum FunctionValidationError {
         /// Argument position.
         position: usize,
     },
-    #[error("function with incorrect return type used")]
-    IncorrectFunctionReturnType,
+    #[error("function '{name}' returns <{received:?}>, but expected any of <{expected:?}>")]
+    IncorrectFunctionReturnType {
+        /// Function name.
+        name: String,
+        /// Expected return type.
+        expected: Vec<SPathType>,
+        /// Received return type.
+        received: SPathType,
+    },
 }

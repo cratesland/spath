@@ -15,6 +15,7 @@
 use std::iter::Peekable;
 
 use winnow::combinator::alt;
+use winnow::combinator::backtrack_err;
 use winnow::combinator::delimited;
 use winnow::combinator::opt;
 use winnow::combinator::preceded;
@@ -392,11 +393,11 @@ fn parse_comparable<Registry>(input: &mut Input<Registry>) -> Result<Comparable,
 where
     Registry: FunctionRegistry,
 {
-    alt((
+    backtrack_err(alt((
         parse_literal_comparable,
         parse_singular_path_comparable,
         parse_function_expr_comparable,
-    ))
+    )))
     .parse_next(input)
 }
 
@@ -445,7 +446,13 @@ where
     parse_function_expr
         .try_map(|expr| match expr.return_type {
             SPathType::Logical | SPathType::Nodes => Ok(expr),
-            _ => Err(FunctionValidationError::IncorrectFunctionReturnType),
+            SPathType::Value => Err({
+                FunctionValidationError::IncorrectFunctionReturnType {
+                    name: expr.name,
+                    expected: vec![SPathType::Logical, SPathType::Nodes],
+                    received: SPathType::Value,
+                }
+            }),
         })
         .parse_next(input)
 }
@@ -459,7 +466,20 @@ where
     parse_function_expr
         .try_map(|expr| match expr.return_type {
             SPathType::Value => Ok(Comparable::FunctionExpr(expr)),
-            _ => Err(FunctionValidationError::IncorrectFunctionReturnType),
+            SPathType::Logical => Err({
+                FunctionValidationError::IncorrectFunctionReturnType {
+                    name: expr.name,
+                    expected: vec![SPathType::Value],
+                    received: SPathType::Logical,
+                }
+            }),
+            SPathType::Nodes => Err({
+                FunctionValidationError::IncorrectFunctionReturnType {
+                    name: expr.name,
+                    expected: vec![SPathType::Value],
+                    received: SPathType::Nodes,
+                }
+            }),
         })
         .parse_next(input)
 }

@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::spec::function::builtin::*;
-use crate::VariantValue;
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
+
+use crate::spec::function::builtin::*;
+use crate::VariantValue;
 
 pub mod builtin;
 

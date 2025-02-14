@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt;
+use std::sync::Arc;
+
 use crate::parser::run_parser;
 use crate::spec::function::FunctionRegistry;
 use crate::spec::query::Query;
@@ -20,8 +23,6 @@ use crate::LocatedNodeList;
 use crate::NodeList;
 use crate::ParseError;
 use crate::VariantValue;
-use std::fmt;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct SPath<T: VariantValue, Registry: FunctionRegistry<Value = T>> {
