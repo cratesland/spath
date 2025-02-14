@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::fmt;
+use std::sync::Arc;
 
 use crate::parser::run_parser;
 use crate::spec::function::FunctionRegistry;
@@ -26,12 +27,13 @@ use crate::VariantValue;
 #[derive(Debug, Clone)]
 pub struct SPath<T: VariantValue, Registry: FunctionRegistry<Value = T>> {
     query: Query,
-    registry: Registry,
+    registry: Arc<Registry>,
 }
 
 impl<T: VariantValue, Registry: FunctionRegistry<Value = T>> SPath<T, Registry> {
     pub fn parse_with_registry(query: &str, registry: Registry) -> Result<Self, ParseError> {
-        let (query, registry) = run_parser(query, registry)?;
+        let registry = Arc::new(registry);
+        let query = run_parser(query, registry.clone())?;
         Ok(Self { query, registry })
     }
 

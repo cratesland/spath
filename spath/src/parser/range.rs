@@ -16,17 +16,17 @@ use std::fmt;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Range {
-    pub start: u32,
-    pub end: u32,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Range {
     pub fn start(&self) -> usize {
-        self.start as usize
+        self.start
     }
 
     pub fn end(&self) -> usize {
-        self.end as usize
+        self.end
     }
 }
 
@@ -44,15 +44,15 @@ impl fmt::Display for Range {
 
 impl From<Range> for std::ops::Range<usize> {
     fn from(range: Range) -> std::ops::Range<usize> {
-        (range.start as usize)..(range.end as usize)
+        range.start..range.end
     }
 }
 
 impl From<std::ops::Range<usize>> for Range {
     fn from(range: std::ops::Range<usize>) -> Range {
         Range {
-            start: range.start as u32,
-            end: range.end as u32,
+            start: range.start,
+            end: range.end,
         }
     }
 }

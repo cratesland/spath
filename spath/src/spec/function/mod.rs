@@ -14,6 +14,7 @@
 
 use std::fmt;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use crate::spec::function::builtin::*;
 use crate::VariantValue;
@@ -121,6 +122,17 @@ impl<T: VariantValue> Function<T> {
 pub trait FunctionRegistry {
     type Value: VariantValue;
     fn get(&self, name: &str) -> Option<Function<Self::Value>>;
+}
+
+impl<Registry> FunctionRegistry for Arc<Registry>
+where
+    Registry: FunctionRegistry,
+{
+    type Value = Registry::Value;
+
+    fn get(&self, name: &str) -> Option<Function<Self::Value>> {
+        (**self).get(name)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -71,7 +71,7 @@ impl<'a> Iterator for Tokenizer<'a> {
             Some(Err(_)) => {
                 let span = Range::from(self.lexer.span().start..self.source.len());
                 let message = "failed to recognize the rest tokens";
-                Some(Err(Error::new(span, message)))
+                Some(Err(Error::new_cut(span, message)))
             }
             Some(Ok(kind)) => Some(Ok(Token {
                 source: self.source,
@@ -166,4 +166,10 @@ pub enum TokenKind {
     NULL,
     #[token("true")]
     TRUE,
+}
+
+impl TokenKind {
+    pub fn is_eoi(&self) -> bool {
+        matches!(self, TokenKind::EOI)
+    }
 }

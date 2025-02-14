@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use crate::parser::error::Error;
 use crate::parser::input::Input;
 use crate::parser::input::InputState;
@@ -28,21 +30,14 @@ pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
-pub fn run_parser<T, Registry>(
-    source: &str,
-    registry: Registry,
-) -> Result<(Query, Registry), ParseError>
+pub fn run_parser<T, Registry>(source: &str, registry: Arc<Registry>) -> Result<Query, ParseError>
 where
     T: VariantValue,
     Registry: FunctionRegistry<Value = T>,
 {
-    let tokens = run_tokenizer(source).map_err(|err| ParseError(err.to_string()))?;
-
+    let tokens = run_tokenizer(source).map_err(|err| err.into_parse_error(source))?;
     let input = TokenSlice::new(&tokens);
     let state = InputState::new(registry);
     let mut input = Input { input, state };
-
-    let query = parse_query_main(&mut input).map_err(|err| ParseError(err.to_string()))?;
-    let registry = input.state.into_registry();
-    Ok((query, registry))
+    parse_query_main(&mut input).map_err(|err| err.into_parse_error(source))
 }

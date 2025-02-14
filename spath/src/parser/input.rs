@@ -13,18 +13,22 @@
 // limitations under the License.
 
 use std::fmt;
+use std::sync::Arc;
 
-use winnow::token::literal;
+use winnow::error::ParserError;
+use winnow::stream::Stream;
 use winnow::Parser;
 use winnow::Stateful;
 
-use crate::parser::error::RefineError;
+use crate::parser::error::Error;
+use crate::parser::range::Range;
 use crate::parser::token::Token;
 use crate::parser::token::TokenKind;
 use crate::spec::function::FunctionRegistry;
 
+#[derive(Clone)]
 pub struct InputState<Registry> {
-    registry: Registry,
+    registry: Arc<Registry>,
 }
 
 impl<Registry> fmt::Debug for InputState<Registry> {
@@ -34,16 +38,12 @@ impl<Registry> fmt::Debug for InputState<Registry> {
 }
 
 impl<Registry> InputState<Registry> {
-    pub fn new(registry: Registry) -> Self {
+    pub fn new(registry: Arc<Registry>) -> Self {
         Self { registry }
     }
 
-    pub fn registry(&self) -> &Registry {
-        &self.registry
-    }
-
-    pub fn into_registry(self) -> Registry {
-        self.registry
+    pub fn registry(&self) -> Arc<Registry> {
+        self.registry.clone()
     }
 }
 
@@ -51,35 +51,50 @@ pub type TokenSlice<'a> = winnow::stream::TokenSlice<'a, Token<'a>>;
 
 pub type Input<'a, Registry> = Stateful<TokenSlice<'a>, InputState<Registry>>;
 
-impl PartialEq<&str> for Token<'_> {
-    fn eq(&self, other: &&str) -> bool {
-        self.text() == *other
-    }
-}
-
-impl PartialEq<TokenKind> for Token<'_> {
-    fn eq(&self, other: &TokenKind) -> bool {
-        self.kind == *other
-    }
-}
-
-impl<'a, Registry> Parser<Input<'a, Registry>, &'a Token<'a>, RefineError> for TokenKind
+impl<'a, Registry> Parser<Input<'a, Registry>, &'a Token<'a>, Error> for TokenKind
 where
     Registry: FunctionRegistry,
 {
-    fn parse_next(
-        &mut self,
-        input: &mut Input<'a, Registry>,
-    ) -> Result<&'a Token<'a>, RefineError> {
-        literal(*self).parse_next(input).map(|t| &t[0])
+    fn parse_next(&mut self, input: &mut Input<'a, Registry>) -> Result<&'a Token<'a>, Error> {
+        match input.first().filter(|token| token.kind == *self) {
+            Some(_) => {
+                // SAFETY: `first` returns `Some` if the input is not empty.
+                let token = input.next_token().unwrap();
+                Ok(token)
+            }
+            None => {
+                if self.is_eoi() {
+                    let start = input.first().unwrap().span.start;
+                    let end = input.last().unwrap().span.end;
+                    Err(Error::new_cut(
+                        Range::from(start..end),
+                        "failed to parse the rest of input",
+                    ))
+                } else {
+                    let err = Error::from_input(input);
+                    Err(err.with_message(format!("expected token {self:?}")))
+                }
+            }
+        }
     }
 }
 
 pub fn text<'a, Registry>(
     text: &'static str,
-) -> impl Parser<Input<'a, Registry>, &'a Token<'a>, RefineError>
+) -> impl Parser<Input<'a, Registry>, &'a Token<'a>, Error>
 where
     Registry: FunctionRegistry,
 {
-    move |input: &mut Input<'a, Registry>| literal(text).parse_next(input).map(|t| &t[0])
+    move |input: &mut Input<'a, Registry>| match input.first().filter(|token| token.text() == text)
+    {
+        Some(_) => {
+            // SAFETY: `first` returns `Some` if the input is not empty.
+            let token = input.next_token().unwrap();
+            Ok(token)
+        }
+        None => {
+            let err = Error::from_input(input);
+            Err(err.with_message(format!("expected text {text}")))
+        }
+    }
 }
