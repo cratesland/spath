@@ -15,42 +15,26 @@
 use crate::parser::input::Input;
 use crate::parser::range::Range;
 use crate::spec::function::FunctionValidationError;
+use crate::spec::selector::filter::NonSingularQueryError;
 use crate::ParseError;
 use std::fmt::Debug;
-use winnow::error::Needed;
-use winnow::stream::Stream;
+use winnow::error::{FromExternalError, ModalError, Needed, ParserError};
 
 /// An in-flight parsing error.
 #[derive(Debug)]
 pub struct Error {
     range: Range,
     message: String,
-    context: Vec<(Range, &'static str)>,
     cut: bool,
 }
 
-impl<'a, Registry> winnow::error::AddContext<Input<'a, Registry>> for Error {
-    fn add_context(
-        mut self,
-        input: &Input<'a, Registry>,
-        token_start: &<Input<'a, Registry> as Stream>::Checkpoint,
-        ctx: &'static str,
-    ) -> Self {
-        let mut input = input.clone();
-        input.reset(token_start);
-        self.context.push((input[0].span, ctx));
-        self
-    }
-}
-
-impl<'a, Registry> winnow::error::ParserError<Input<'a, Registry>> for Error {
+impl<'a, Registry> ParserError<Input<'a, Registry>> for Error {
     type Inner = Self;
 
     fn from_input(input: &Input<'a, Registry>) -> Self {
         Self {
             range: input[0].span,
             message: "unexpected token".to_string(),
-            context: vec![],
             cut: false,
         }
     }
@@ -62,7 +46,6 @@ impl<'a, Registry> winnow::error::ParserError<Input<'a, Registry>> for Error {
         Self {
             range: input[0].span,
             message: message.to_string(),
-            context: vec![],
             cut: true,
         }
     }
@@ -88,28 +71,37 @@ impl<'a, Registry> winnow::error::ParserError<Input<'a, Registry>> for Error {
     }
 }
 
-impl<'a, Registry> winnow::error::FromExternalError<Input<'a, Registry>, Error> for Error {
+impl<'a, Registry> FromExternalError<Input<'a, Registry>, Error> for Error {
     fn from_external_error(_input: &Input<'a, Registry>, err: Error) -> Self {
         err
     }
 }
 
-impl<'a, Registry> winnow::error::FromExternalError<Input<'a, Registry>, FunctionValidationError>
-    for Error
-{
+impl<'a, Registry> FromExternalError<Input<'a, Registry>, FunctionValidationError> for Error {
     fn from_external_error(input: &Input<'a, Registry>, err: FunctionValidationError) -> Self {
         let range = input[0].span;
         let message = format!("{err}");
         Self {
             range,
             message,
-            context: vec![],
             cut: true,
         }
     }
 }
 
-impl winnow::error::ModalError for Error {
+impl<'a, Registry> FromExternalError<Input<'a, Registry>, NonSingularQueryError> for Error {
+    fn from_external_error(input: &Input<'a, Registry>, err: NonSingularQueryError) -> Self {
+        let range = input[0].span;
+        let message = format!("{err}");
+        Self {
+            range,
+            message,
+            cut: false,
+        }
+    }
+}
+
+impl ModalError for Error {
     fn cut(mut self) -> Self {
         self.cut = true;
         self
@@ -126,7 +118,6 @@ impl Error {
         Self {
             range,
             message: message.into(),
-            context: vec![],
             cut: true,
         }
     }
@@ -137,17 +128,10 @@ impl Error {
     }
 
     pub fn into_parse_error(self, source: impl Into<String>) -> ParseError {
-        let context = self
-            .context
-            .into_iter()
-            .map(|(range, ctx)| (range.into(), ctx))
-            .collect();
-
         ParseError {
             source: source.into(),
             range: self.range.into(),
             message: self.message,
-            context,
         }
     }
 }

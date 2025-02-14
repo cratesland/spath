@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt;
-use std::marker::PhantomData;
-
 use crate::spec::function::builtin::*;
 use crate::VariantValue;
+use std::fmt;
+use std::marker::PhantomData;
+use std::sync::Arc;
 
 pub mod builtin;
 
@@ -121,6 +121,17 @@ impl<T: VariantValue> Function<T> {
 pub trait FunctionRegistry {
     type Value: VariantValue;
     fn get(&self, name: &str) -> Option<Function<Self::Value>>;
+}
+
+impl<Registry> FunctionRegistry for Arc<Registry>
+where
+    Registry: FunctionRegistry,
+{
+    type Value = Registry::Value;
+
+    fn get(&self, name: &str) -> Option<Function<Self::Value>> {
+        (**self).get(name)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

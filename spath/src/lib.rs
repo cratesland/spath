@@ -43,12 +43,25 @@ pub struct ParseError {
     source: String,
     range: std::ops::Range<usize>,
     message: String,
-    context: Vec<(std::ops::Range<usize>, &'static str)>,
 }
 
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.source, self.message)
+        use annotate_snippets::Level;
+        use annotate_snippets::Renderer;
+        use annotate_snippets::Snippet;
+
+        let message = Level::Error.title("failed to parse SPath query").snippet(
+            Snippet::source(self.source.as_str()).annotation(
+                Level::Error
+                    .span(self.range.clone())
+                    .label(self.message.as_str()),
+            ),
+        );
+
+        let render = Renderer::plain();
+        write!(f, "{}", render.render(message))?;
+        Ok(())
     }
 }
 

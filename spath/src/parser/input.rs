@@ -36,7 +36,7 @@ impl<Registry> fmt::Debug for InputState<Registry> {
 }
 
 impl<Registry> InputState<Registry> {
-    pub fn new(registry: Registry) -> Self {
+    pub fn new(registry: Arc<Registry>) -> Self {
         Self { registry }
     }
 

@@ -8,5 +8,5 @@ fn parse_spath(spath: &str) -> Result<(), spath::ParseError> {
 
 #[test]
 fn test_malformed() {
-    println!("{}", parse_spath(r#"$.a[?@ >< 2]"#).unwrap_err());
+    println!("{}", parse_spath(r#"$.a[?length(@)]"#).unwrap_err());
 }

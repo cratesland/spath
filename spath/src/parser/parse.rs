@@ -21,8 +21,7 @@ use winnow::combinator::preceded;
 use winnow::combinator::repeat;
 use winnow::combinator::separated;
 use winnow::combinator::separated_pair;
-use winnow::error::{FromExternalError, ModalError};
-use winnow::stream::Stream;
+use winnow::error::ModalError;
 use winnow::Parser;
 
 use crate::parser::error::Error;
@@ -374,10 +373,16 @@ fn parse_comp_expr<Registry>(input: &mut Input<Registry>) -> Result<ComparisonEx
 where
     Registry: FunctionRegistry,
 {
+    let parse_second_comparable = move |i: &mut _| {
+        parse_comparable
+            .parse_next(i)
+            .map_err(|err| err.with_message("expected another comparable").cut())
+    };
+
     (
         parse_comparable,
         parse_comparison_operator,
-        parse_comparable,
+        parse_second_comparable,
     )
         .map(|(left, op, right)| ComparisonExpr { left, op, right })
         .parse_next(input)
@@ -463,10 +468,9 @@ fn parse_function_expr<Registry>(input: &mut Input<Registry>) -> Result<Function
 where
     Registry: FunctionRegistry,
 {
-    let start = input.checkpoint();
+    let registry = input.state.registry();
 
-    
-    let (name, args) = (
+    (
         Identifier,
         delimited(
             text("("),
@@ -474,34 +478,23 @@ where
             text(")"),
         ),
     )
-        .parse_next(input)?;
+        .try_map(|(name, args)| {
+            let name = name.text();
+            let args: Vec<FunctionExprArg> = args;
 
-    let registry = input.state.registry();
-    let name = name.text().to_string();
-    let args: Vec<FunctionExprArg> = args;
+            let function = registry.get(name);
+            let function = function.ok_or_else(|| FunctionValidationError::Undefined {
+                name: name.to_string(),
+            })?;
+            function.validate(args.as_slice(), &registry)?;
 
-    let function = match registry.get(name.as_str()) {
-        Some(function) => function,
-        None => {
-            return Err(FunctionValidationError::Undefined { name }).map_err(|err| {
-                input.reset(&start);
-                Error::from_external_error(input, err).cut()
+            Ok::<FunctionExpr, FunctionValidationError>(FunctionExpr {
+                name: name.to_string(),
+                args,
+                return_type: function.result_type(),
             })
-        }
-    };
-
-    function
-        .validate(args.as_slice(), registry)
-        .map_err(|err| {
-            input.reset(&start);
-            Error::from_external_error(input, err).cut()
-        })?;
-
-    Ok(FunctionExpr {
-        name,
-        args,
-        return_type: function.result_type(),
-    })
+        })
+        .parse_next(input)
 }
 
 fn parse_function_argument<Registry>(input: &mut Input<Registry>) -> Result<FunctionExprArg, Error>
