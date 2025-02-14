@@ -2,14 +2,14 @@
 
 [![Crates.io][crates-badge]][crates-url]
 [![Documentation][docs-badge]][docs-url]
-[![MSRV 1.75][msrv-badge]](https://www.whatrustisit.com)
+[![MSRV 1.80][msrv-badge]](https://www.whatrustisit.com)
 [![Apache 2.0 licensed][license-badge]][license-url]
 [![Build Status][actions-badge]][actions-url]
 
 [crates-badge]: https://img.shields.io/crates/v/spath.svg
 [crates-url]: https://crates.io/crates/spath
 [docs-badge]: https://docs.rs/spath/badge.svg
-[msrv-badge]: https://img.shields.io/badge/MSRV-1.75-green?logo=rust
+[msrv-badge]: https://img.shields.io/badge/MSRV-1.80-green?logo=rust
 [docs-url]: https://docs.rs/spath
 [license-badge]: https://img.shields.io/crates/l/spath
 [license-url]: LICENSE
@@ -30,10 +30,9 @@ Here is a quick example that shows how to use the `spath` crate to query JSONPat
 
 ```rust
 use serde_json::json;
-use serde_json::Value;
 use spath::SPath;
-use spath::VariantValue;
 
+#[test]
 fn main() {
     let data = json!({
       "name": "John Doe",
@@ -44,9 +43,11 @@ fn main() {
       ]
     });
 
-    let spath = SPath::new("$.phones[1]").unwrap();
-    let result = spath.eval(&data).unwrap();
-    assert_eq!(result, json!("+44 2345678"));
+    let registry = spath::json::BuiltinFunctionRegistry::default();
+    let spath = SPath::parse_with_registry("$.phones[1]", registry).unwrap();
+    let result = spath.query(&data);
+    let result = result.exactly_one().unwrap();
+    assert_eq!(result, &json!("+44 2345678"));
 }
 ```
 
