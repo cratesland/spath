@@ -151,7 +151,7 @@ pub enum Segment {
 }
 
 impl Segment {
-    /// Does this segment extract a singular node.
+    /// Whether this segment extracts at most a singular node.
     pub fn is_singular(&self) -> bool {
         match self {
             Segment::LongHand(selectors) => {
