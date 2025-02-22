@@ -53,7 +53,7 @@ pub enum Selector {
 }
 
 impl Selector {
-    /// Will the selector select at most only a single node
+    /// Whether this selector selects at most a single node.
     pub fn is_singular(&self) -> bool {
         matches!(self, Selector::Name(_) | Selector::Index(_))
     }

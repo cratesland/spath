@@ -73,7 +73,8 @@ pub struct Query {
 }
 
 impl Query {
-    pub(crate) fn is_singular(&self) -> bool {
+    /// Whether this query extracts at most a singular node.
+    pub fn is_singular(&self) -> bool {
         for s in &self.segments {
             if s.is_descendent() {
                 return false;
