@@ -26,7 +26,7 @@ use crate::spec::query::Query;
 use crate::ParseError;
 use crate::VariantValue;
 
-pub fn run_tokenizer(source: &str) -> Result<Vec<Token>, Error> {
+pub fn run_tokenizer(source: &str) -> Result<Vec<Token<'_>>, Error> {
     Tokenizer::new(source).collect::<Result<_, _>>()
 }
 
