@@ -485,21 +485,11 @@ impl SingularQuery {
         for segment in &self.segments {
             match segment {
                 SingularQuerySegment::Name(name) => {
-                    if let Some(t) = target.as_object().and_then(|o| o.get(name.as_str())) {
-                        target = t;
-                    } else {
-                        return None;
-                    }
+                    target = target.as_object().and_then(|o| o.get(name.as_str()))?;
                 }
                 SingularQuerySegment::Index(i) => {
-                    if let Some(t) = target
-                        .as_array()
-                        .and_then(|l| usize::try_from(i.index()).ok().and_then(|i| l.get(i)))
-                    {
-                        target = t;
-                    } else {
-                        return None;
-                    }
+                    let index = usize::try_from(i.index()).ok()?;
+                    target = target.as_array()?.get(index)?;
                 }
             }
         }
